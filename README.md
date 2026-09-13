@@ -13,16 +13,20 @@ A fundação técnica está na fase Execute. Os artefatos internos de planejamen
 
 ## Comandos-raiz
 
-Os comandos delegam apenas para workspaces que já ofereçam o script correspondente:
+Os comandos de desenvolvimento e os gates comuns podem ser executados a partir da raiz:
 
 ```text
 pnpm dev
 pnpm build
 pnpm lint
+pnpm format:check
 pnpm typecheck
 pnpm test
 pnpm test:integration
 pnpm test:e2e
+pnpm check
 ```
 
 Aplicações e pacotes serão adicionados pelas próximas tarefas da fundação técnica.
+
+As regras públicas de dependência do monorepo estão documentadas em `docs/architecture/dependency-boundaries.md` e são verificadas por `pnpm lint:boundaries`.

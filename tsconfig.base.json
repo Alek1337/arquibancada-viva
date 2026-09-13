@@ -6,12 +6,29 @@
     "exactOptionalPropertyTypes": true,
     "forceConsistentCasingInFileNames": true,
     "isolatedModules": true,
+    "lib": ["ES2024"],
+    "module": "Preserve",
+    "moduleDetection": "force",
+    "moduleResolution": "Bundler",
     "noFallthroughCasesInSwitch": true,
     "noImplicitOverride": true,
+    "noEmit": true,
     "noUncheckedIndexedAccess": true,
+    "paths": {
+      "@arquibancada-viva/auth": ["./packages/auth/src/index.ts"],
+      "@arquibancada-viva/config": ["./packages/config/src/index.ts"],
+      "@arquibancada-viva/contracts": ["./packages/contracts/src/index.ts"],
+      "@arquibancada-viva/database": ["./packages/database/src/index.ts"],
+      "@arquibancada-viva/game-core": ["./packages/game-core/src/index.ts"],
+      "@arquibancada-viva/testing": ["./packages/testing/src/index.ts"],
+      "@arquibancada-viva/ui": ["./packages/ui/src/index.ts"]
+    },
     "resolveJsonModule": true,
     "skipLibCheck": true,
     "strict": true,
+    "target": "ES2024",
+    "types": [],
+    "verbatimModuleSyntax": true,
     "useUnknownInCatchVariables": true
   }
 }
