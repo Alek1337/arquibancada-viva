@@ -3,7 +3,7 @@
 O monorepo usa aliases `@arquibancada-viva/*` e uma direção única de dependências.
 
 ```text
-apps/web    -> ui, contracts, config
+apps/web    -> ui, contracts, config/client
 apps/api    -> auth, contracts, database, game-core, config
 apps/worker -> auth, contracts, database, game-core, config
 

@@ -17,6 +17,9 @@
     "paths": {
       "@arquibancada-viva/auth": ["./packages/auth/src/index.ts"],
       "@arquibancada-viva/config": ["./packages/config/src/index.ts"],
+      "@arquibancada-viva/config/api": ["./packages/config/src/api.ts"],
+      "@arquibancada-viva/config/client": ["./packages/config/src/client.ts"],
+      "@arquibancada-viva/config/worker": ["./packages/config/src/worker.ts"],
       "@arquibancada-viva/contracts": ["./packages/contracts/src/index.ts"],
       "@arquibancada-viva/database": ["./packages/database/src/index.ts"],
       "@arquibancada-viva/game-core": ["./packages/game-core/src/index.ts"],

@@ -27,6 +27,6 @@ pnpm test:e2e
 pnpm check
 ```
 
-Aplicações e pacotes serão adicionados pelas próximas tarefas da fundação técnica.
-
 As regras públicas de dependência do monorepo estão documentadas em `docs/architecture/dependency-boundaries.md` e são verificadas por `pnpm lint:boundaries`.
+
+O catálogo de variáveis, os pontos de entrada de configuração e a política de versionamento dos contratos estão em `docs/configuration.md`. Copie `.env.example` somente como ponto de partida para o ambiente local.

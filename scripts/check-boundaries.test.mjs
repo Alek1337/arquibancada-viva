@@ -37,3 +37,27 @@ test("the negative fixture rejects infrastructure inside game-core", () => {
   assert.equal(result.status, 1);
   assert.match(result.stderr, /game-core não pode importar infraestrutura: drizzle-orm/u);
 });
+
+test("the client fixture cannot import server configuration", () => {
+  const fixtureRoot = path.join(
+    repositoryRoot,
+    "tests",
+    "fixtures",
+    "boundaries",
+    "invalid-web-config",
+  );
+  const result = spawnSync(
+    process.execPath,
+    [
+      path.join(scriptsDirectory, "check-boundaries.mjs"),
+      "--root",
+      fixtureRoot,
+      "--skip-alias-check",
+      "--skip-manifest-check",
+    ],
+    { encoding: "utf8" },
+  );
+
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /web só pode importar configuração client-safe/u);
+});

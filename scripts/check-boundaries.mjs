@@ -319,8 +319,12 @@ function checkInternalImport({ manifests, specifier, unit }) {
     return `dependência inversa proibida: ${unit} -> ${targetUnit}`;
   }
 
+  const requestedExport = subpathParts.length > 0 ? `./${subpathParts.join("/")}` : ".";
+  if (unit === "apps/web" && targetUnit === "packages/config" && requestedExport !== "./client") {
+    return `web só pode importar configuração client-safe: ${specifier}`;
+  }
+
   if (subpathParts.length > 0) {
-    const requestedExport = `./${subpathParts.join("/")}`;
     if (!manifests.get(targetUnit)?.exports.has(requestedExport)) {
       return `import profundo não exportado: ${specifier}`;
     }
