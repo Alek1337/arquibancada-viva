@@ -25,6 +25,8 @@ O gate de fronteiras rejeita qualquer tentativa da web de importar `config/api` 
 | `WEB_ORIGIN` | API | sim | origem HTTP(S) aceita pela API |
 | `AUTH_SECRET` | API | sim | segredo com no mínimo 32 caracteres |
 | `DATABASE_URL` | API/worker | sim | URL `postgres://` ou `postgresql://` |
+| `API_DATABASE_POOL_MAX` | API | não | limite do pool PostgreSQL da API; padrão 10 |
+| `WORKER_DATABASE_POOL_MAX` | worker | não | limite do pool PostgreSQL do worker; padrão 5 |
 | `REDIS_URL` | API/worker | sim | URL `redis://` ou `rediss://` |
 | `POSTGRES_PORT` | Compose | não | porta loopback do PostgreSQL; padrão 5432 |
 | `REDIS_PORT` | Compose | não | porta loopback do Redis; padrão 6379 |

@@ -18,6 +18,7 @@ export const apiConfigSchema = z
     API_PORT: portSchema.default(3_001),
     WEB_ORIGIN: httpUrlSchema,
     DATABASE_URL: postgresUrlSchema,
+    API_DATABASE_POOL_MAX: z.coerce.number().int().min(1).max(50).default(10),
     REDIS_URL: redisUrlSchema,
     AUTH_SECRET: serverSecretSchema,
     ...storageConfigShape,

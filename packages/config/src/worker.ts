@@ -13,6 +13,7 @@ export const workerConfigSchema = z
     NODE_ENV: nodeEnvironmentSchema,
     LOG_LEVEL: logLevelSchema,
     DATABASE_URL: postgresUrlSchema,
+    WORKER_DATABASE_POOL_MAX: z.coerce.number().int().min(1).max(50).default(5),
     REDIS_URL: redisUrlSchema,
     WORKER_CONCURRENCY: z.coerce.number().int().min(1).max(100).default(5),
     ...storageConfigShape,

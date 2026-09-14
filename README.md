@@ -36,3 +36,5 @@ As regras públicas de dependência do monorepo estão documentadas em `docs/arc
 O catálogo de variáveis, os pontos de entrada de configuração e a política de versionamento dos contratos estão em `docs/configuration.md`. Copie `.env.example` somente como ponto de partida para o ambiente local.
 
 O fluxo do Docker Compose, suas portas e a política de preservação de volumes estão em `docs/local-development.md`.
+
+O fluxo explícito de migrations, pools e transações PostgreSQL está em `docs/database.md`.

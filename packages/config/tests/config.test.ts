@@ -25,6 +25,7 @@ describe("process configuration", () => {
       NODE_ENV: "development",
       LOG_LEVEL: "info",
       API_PORT: 3_001,
+      API_DATABASE_POOL_MAX: 10,
     });
   });
 
@@ -64,5 +65,17 @@ describe("process configuration", () => {
     });
 
     expect(result.WORKER_CONCURRENCY).toBe(20);
+    expect(result.WORKER_DATABASE_POOL_MAX).toBe(5);
+  });
+
+  it("rejects database pool limits outside the operational bounds", () => {
+    expect(() =>
+      parseWorkerConfig({
+        DATABASE_URL: "postgres://app:app@localhost:5432/app",
+        WORKER_DATABASE_POOL_MAX: "0",
+        REDIS_URL: "redis://localhost:6379",
+        ...storageConfig,
+      }),
+    ).toThrow();
   });
 });
