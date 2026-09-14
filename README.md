@@ -25,8 +25,14 @@ pnpm test
 pnpm test:integration
 pnpm test:e2e
 pnpm check
+pnpm infra:config
+pnpm infra:up
+pnpm infra:status
+pnpm infra:down
 ```
 
 As regras públicas de dependência do monorepo estão documentadas em `docs/architecture/dependency-boundaries.md` e são verificadas por `pnpm lint:boundaries`.
 
 O catálogo de variáveis, os pontos de entrada de configuração e a política de versionamento dos contratos estão em `docs/configuration.md`. Copie `.env.example` somente como ponto de partida para o ambiente local.
+
+O fluxo do Docker Compose, suas portas e a política de preservação de volumes estão em `docs/local-development.md`.

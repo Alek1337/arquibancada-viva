@@ -26,7 +26,10 @@ O gate de fronteiras rejeita qualquer tentativa da web de importar `config/api` 
 | `AUTH_SECRET` | API | sim | segredo com no mínimo 32 caracteres |
 | `DATABASE_URL` | API/worker | sim | URL `postgres://` ou `postgresql://` |
 | `REDIS_URL` | API/worker | sim | URL `redis://` ou `rediss://` |
+| `POSTGRES_PORT` | Compose | não | porta loopback do PostgreSQL; padrão 5432 |
+| `REDIS_PORT` | Compose | não | porta loopback do Redis; padrão 6379 |
 | `S3_ENDPOINT` | API/worker | sim | endpoint do armazenamento compatível com S3 |
+| `S3_PORT` | Compose | não | porta loopback do endpoint S3; padrão 9000 |
 | `S3_REGION` | API/worker | sim | região configurada no cliente S3 |
 | `S3_BUCKET` | API/worker | sim | bucket privado ou de quarentena |
 | `S3_ACCESS_KEY_ID` | API/worker | sim | identificador de acesso; nunca registrar em log |
