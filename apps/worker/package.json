@@ -1,0 +1,30 @@
+{
+  "name": "@arquibancada-viva/worker",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/main.ts",
+      "default": "./src/main.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsup --config tsup.config.ts",
+    "dev": "node --env-file-if-exists=../../.env --watch --import tsx src/main.ts",
+    "format": "biome format --write .",
+    "lint": "biome lint .",
+    "start": "node --env-file-if-exists=../../.env dist/main.js",
+    "test": "vitest run",
+    "typecheck": "tsc --project tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@arquibancada-viva/config": "workspace:*",
+    "@arquibancada-viva/database": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "24.13.4",
+    "tsup": "8.5.1",
+    "tsx": "4.23.13"
+  }
+}

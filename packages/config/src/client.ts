@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { httpUrlSchema, type ConfigInput } from "./shared.js";
+import { httpUrlSchema, type ConfigInput } from "./shared";
 
 export const clientConfigSchema = z
   .object({

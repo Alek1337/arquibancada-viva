@@ -1,4 +1,4 @@
-import { httpUrlSchema, nonEmptyStringSchema, serverSecretSchema } from "./shared.js";
+import { httpUrlSchema, nonEmptyStringSchema, serverSecretSchema } from "./shared";
 
 export const storageConfigShape = {
   S3_ENDPOINT: httpUrlSchema,

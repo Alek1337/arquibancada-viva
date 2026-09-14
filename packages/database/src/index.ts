@@ -1,6 +1,7 @@
 export { createPublicId } from "./identifiers.js";
 export { applyMigrations, MIGRATIONS_DIRECTORY } from "./migrations.js";
 export {
+  checkDatabaseConnection,
   createApiDatabase,
   createDatabaseRuntime,
   createMigrationDatabase,

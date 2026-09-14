@@ -10,6 +10,9 @@
   },
   "scripts": {
     "dev": "pnpm -r --parallel --if-present dev",
+    "dev:api": "pnpm --filter @arquibancada-viva/api dev",
+    "dev:web": "pnpm --filter @arquibancada-viva/web dev",
+    "dev:worker": "pnpm --filter @arquibancada-viva/worker dev",
     "build": "pnpm -r --if-present build",
     "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build",
     "db:check": "pnpm --filter @arquibancada-viva/database db:check",
@@ -28,7 +31,11 @@
     "test": "pnpm test:boundaries && pnpm -r --if-present test",
     "test:boundaries": "node --test scripts/check-boundaries.test.mjs",
     "test:integration": "pnpm -r --if-present test:integration",
-    "test:e2e": "pnpm -r --if-present test:e2e"
+    "start:api": "pnpm --filter @arquibancada-viva/api start",
+    "start:web": "pnpm --filter @arquibancada-viva/web start",
+    "start:worker": "pnpm --filter @arquibancada-viva/worker start",
+    "test:e2e": "pnpm -r --if-present test:e2e",
+    "test:smoke": "node scripts/smoke-apps.mjs"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.13",

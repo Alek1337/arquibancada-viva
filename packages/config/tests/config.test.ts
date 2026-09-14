@@ -24,6 +24,7 @@ describe("process configuration", () => {
     expect(result).toMatchObject({
       NODE_ENV: "development",
       LOG_LEVEL: "info",
+      API_HOST: "127.0.0.1",
       API_PORT: 3_001,
       API_DATABASE_POOL_MAX: 10,
     });
@@ -66,6 +67,8 @@ describe("process configuration", () => {
 
     expect(result.WORKER_CONCURRENCY).toBe(20);
     expect(result.WORKER_DATABASE_POOL_MAX).toBe(5);
+    expect(result.WORKER_PROBE_HOST).toBe("127.0.0.1");
+    expect(result.WORKER_PROBE_PORT).toBe(3_002);
   });
 
   it("rejects database pool limits outside the operational bounds", () => {

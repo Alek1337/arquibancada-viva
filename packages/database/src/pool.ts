@@ -1,5 +1,6 @@
 import type { ApiConfig } from "@arquibancada-viva/config/api";
 import type { WorkerConfig } from "@arquibancada-viva/config/worker";
+import { sql } from "drizzle-orm";
 import { drizzle, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import { Pool, type PoolConfig } from "pg";
 import * as schema from "./schema/index.js";
@@ -68,4 +69,8 @@ export function createWorkerDatabase(
 
 export function createMigrationDatabase(connectionString: string): DatabaseRuntime {
   return createDatabaseRuntime("migration", connectionString, 1);
+}
+
+export async function checkDatabaseConnection(database: Database): Promise<void> {
+  await database.execute(sql`select 1`);
 }

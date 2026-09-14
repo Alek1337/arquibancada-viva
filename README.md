@@ -38,3 +38,5 @@ O catálogo de variáveis, os pontos de entrada de configuração e a política 
 O fluxo do Docker Compose, suas portas e a política de preservação de volumes estão em `docs/local-development.md`.
 
 O fluxo explícito de migrations, pools e transações PostgreSQL está em `docs/database.md`.
+
+Os comandos e probes dos três processos estão em `docs/applications.md`.

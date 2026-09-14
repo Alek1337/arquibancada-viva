@@ -21,6 +21,7 @@ O gate de fronteiras rejeita qualquer tentativa da web de importar `config/api` 
 | `LOG_LEVEL` | API/worker | não | nível estruturado; padrão `info` |
 | `NEXT_PUBLIC_API_URL` | web | sim | URL HTTP(S) pública da API |
 | `NEXT_PUBLIC_SOCKET_URL` | web | sim | URL HTTP(S) pública do Socket.IO |
+| `API_HOST` | API | não | interface de bind; `127.0.0.1` local ou `0.0.0.0` no contêiner |
 | `API_PORT` | API | não | inteiro entre 1 e 65535; padrão 3001 |
 | `WEB_ORIGIN` | API | sim | origem HTTP(S) aceita pela API |
 | `AUTH_SECRET` | API | sim | segredo com no mínimo 32 caracteres |
@@ -37,6 +38,8 @@ O gate de fronteiras rejeita qualquer tentativa da web de importar `config/api` 
 | `S3_ACCESS_KEY_ID` | API/worker | sim | identificador de acesso; nunca registrar em log |
 | `S3_SECRET_ACCESS_KEY` | API/worker | sim | segredo com no mínimo 32 caracteres; nunca registrar em log |
 | `WORKER_CONCURRENCY` | worker | não | inteiro de 1 a 100; padrão 5 |
+| `WORKER_PROBE_HOST` | worker | não | interface do servidor operacional; padrão `127.0.0.1` |
+| `WORKER_PROBE_PORT` | worker | não | porta interna de health/readiness; padrão 3002 |
 
 O arquivo `.env.example` contém somente valores locais fictícios. Credenciais reais permanecem fora do Git.
 

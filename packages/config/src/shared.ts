@@ -12,6 +12,8 @@ export const logLevelSchema = z
 
 export const portSchema = z.coerce.number().int().min(1).max(65_535);
 
+export const bindHostSchema = z.enum(["127.0.0.1", "0.0.0.0"]);
+
 export const httpUrlSchema = z
   .string()
   .trim()
