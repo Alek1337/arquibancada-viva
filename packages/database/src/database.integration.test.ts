@@ -114,7 +114,20 @@ describe("PostgreSQL foundation", () => {
     );
 
     expect(schemas.rows.map((row) => row.schema_name)).toEqual(["app", "auth", "drizzle"]);
-    expect(migrationCount.rows[0]?.count).toBe(1);
+    expect(migrationCount.rows[0]?.count).toBe(2);
+
+    const authTables = await emptyRuntime.pool.query<{ table_name: string }>(`
+      SELECT table_name
+      FROM information_schema.tables
+      WHERE table_schema = 'auth'
+      ORDER BY table_name
+    `);
+    expect(authTables.rows.map((row) => row.table_name)).toEqual([
+      "account",
+      "session",
+      "user",
+      "verification",
+    ]);
   });
 
   it("reapplies migrations as a no-op without duplicating control records", async () => {
@@ -130,7 +143,7 @@ describe("PostgreSQL foundation", () => {
         AND table_name IN ('match_sequences', 'outbox_messages')
     `);
 
-    expect(migrationCount.rows[0]?.count).toBe(1);
+    expect(migrationCount.rows[0]?.count).toBe(2);
     expect(tableCount.rows[0]?.count).toBe(2);
   });
 

@@ -24,6 +24,7 @@ O gate de fronteiras rejeita qualquer tentativa da web de importar `config/api` 
 | `API_HOST` | API | não | interface de bind; `127.0.0.1` local ou `0.0.0.0` no contêiner |
 | `API_PORT` | API | não | inteiro entre 1 e 65535; padrão 3001 |
 | `WEB_ORIGIN` | API | sim | origem HTTP(S) aceita pela API |
+| `AUTH_BASE_URL` | API | sim | URL HTTP(S) pública da API usada pelo Better Auth |
 | `AUTH_SECRET` | API | sim | segredo com no mínimo 32 caracteres |
 | `DATABASE_URL` | API/worker | sim | URL `postgres://` ou `postgresql://` |
 | `API_DATABASE_POOL_MAX` | API | não | limite do pool PostgreSQL da API; padrão 10 |

@@ -5,6 +5,7 @@ import { createApiApplication, type ApiDependencies } from "./main.js";
 const validEnvironment = {
   API_HOST: "127.0.0.1",
   API_PORT: "3101",
+  AUTH_BASE_URL: "http://127.0.0.1:3101",
   AUTH_SECRET: "test-only-secret-with-32-characters",
   DATABASE_URL: "postgresql://app:app@127.0.0.1:5432/test",
   LOG_LEVEL: "fatal",

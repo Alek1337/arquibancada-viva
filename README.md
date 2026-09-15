@@ -40,3 +40,5 @@ O fluxo do Docker Compose, suas portas e a política de preservação de volumes
 O fluxo explícito de migrations, pools e transações PostgreSQL está em `docs/database.md`.
 
 Os comandos e probes dos três processos estão em `docs/applications.md`.
+
+A prova de compatibilidade do Better Auth com NestJS/Fastify, PostgreSQL e Socket.IO está em `docs/auth-spike.md`.

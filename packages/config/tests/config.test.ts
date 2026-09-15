@@ -14,6 +14,7 @@ const storageConfig = {
 describe("process configuration", () => {
   it("parses a complete API configuration and applies defaults", () => {
     const result = parseApiConfig({
+      AUTH_BASE_URL: "http://localhost:3001",
       WEB_ORIGIN: "http://localhost:3000",
       DATABASE_URL: "postgresql://app:app@localhost:5432/app",
       REDIS_URL: "redis://localhost:6379",
@@ -33,6 +34,7 @@ describe("process configuration", () => {
   it("fails before startup when a required server variable is absent", () => {
     expect(() =>
       parseApiConfig({
+        AUTH_BASE_URL: "http://localhost:3001",
         WEB_ORIGIN: "http://localhost:3000",
         REDIS_URL: "redis://localhost:6379",
         AUTH_SECRET: "development-auth-secret-change-me-now",

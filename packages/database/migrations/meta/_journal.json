@@ -8,6 +8,13 @@
       "when": 1789418135419,
       "tag": "0000_outstanding_jack_power",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1789423343681,
+      "tag": "0001_magical_sersi",
+      "breakpoints": true
     }
   ]
 }

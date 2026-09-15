@@ -2,10 +2,16 @@ import type { ApiConfig } from "@arquibancada-viva/config/api";
 import { NestFactory } from "@nestjs/core";
 import { FastifyAdapter, type NestFastifyApplication } from "@nestjs/platform-fastify";
 import { registerAppModule } from "./app.module.js";
-import { createApiDependencies, type ApiDependencies } from "./platform/dependencies.js";
+import {
+  createApiDependencies,
+  type ApiDependencies,
+  isApiRuntimeDependencies,
+} from "./platform/dependencies.js";
+import { registerBetterAuthSpike } from "./spikes/better-auth/runtime.js";
 
 export interface CreateApiApplicationOptions {
   readonly dependencies?: ApiDependencies;
+  readonly enableAuthSpike?: boolean;
   readonly enableShutdownHooks?: boolean;
   readonly logger?: boolean;
 }
@@ -29,6 +35,13 @@ export async function createApiApplication(
     application.setGlobalPrefix("v1");
     if (options.enableShutdownHooks !== false) {
       application.enableShutdownHooks();
+    }
+    const enableAuthSpike = options.enableAuthSpike ?? options.dependencies === undefined;
+    if (enableAuthSpike) {
+      if (!isApiRuntimeDependencies(dependencies)) {
+        throw new Error("O spike de autenticação requer dependências runtime da API.");
+      }
+      registerBetterAuthSpike(application, config, dependencies);
     }
 
     return application;

@@ -19,6 +19,7 @@ export const apiConfigSchema = z
     API_HOST: bindHostSchema.default("127.0.0.1"),
     API_PORT: portSchema.default(3_001),
     WEB_ORIGIN: httpUrlSchema,
+    AUTH_BASE_URL: httpUrlSchema,
     DATABASE_URL: postgresUrlSchema,
     API_DATABASE_POOL_MAX: z.coerce.number().int().min(1).max(50).default(10),
     REDIS_URL: redisUrlSchema,

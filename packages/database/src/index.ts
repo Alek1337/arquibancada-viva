@@ -1,4 +1,5 @@
 export { createPublicId } from "./identifiers.js";
+export { betterAuthDatabaseSchema } from "./better-auth.js";
 export { applyMigrations, MIGRATIONS_DIRECTORY } from "./migrations.js";
 export {
   checkDatabaseConnection,
@@ -13,11 +14,11 @@ export {
 } from "./pool.js";
 export {
   appSchema,
-  authSchema,
   matchSequences,
   outboxMessages,
   outboxStatus,
 } from "./schema/index.js";
+export { authSchema } from "./schema/auth/better-auth.js";
 export {
   type DatabaseTransaction,
   nextMatchSequence,
