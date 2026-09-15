@@ -39,7 +39,7 @@ export function createWorkerRuntime(
     if (request.method === "GET" && pathname === "/ready") {
       if (shuttingDown) {
         sendJson(response, 503, {
-          checks: { postgres: "down" },
+          checks: { postgres: "down", redis: "down" },
           service: "worker",
           status: "not_ready",
         });
@@ -48,16 +48,17 @@ export function createWorkerRuntime(
 
       void dependencies
         .checkReadiness()
-        .then(() => {
-          sendJson(response, 200, {
-            checks: { postgres: "up" },
+        .then((checks) => {
+          const ready = Object.values(checks).every((status) => status === "up");
+          sendJson(response, ready ? 200 : 503, {
+            checks,
             service: "worker",
-            status: "ready",
+            status: ready ? "ready" : "not_ready",
           });
         })
         .catch(() => {
           sendJson(response, 503, {
-            checks: { postgres: "down" },
+            checks: { postgres: "down", redis: "down" },
             service: "worker",
             status: "not_ready",
           });
@@ -94,8 +95,9 @@ export function createWorkerRuntime(
       });
       return closePromise;
     },
-    listen() {
-      return new Promise<void>((resolve, reject) => {
+    async listen() {
+      await dependencies.start();
+      await new Promise<void>((resolve, reject) => {
         server.once("error", reject);
         server.listen(config.WORKER_PROBE_PORT, config.WORKER_PROBE_HOST, () => {
           server.off("error", reject);

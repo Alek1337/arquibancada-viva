@@ -1,8 +1,13 @@
 import type { WorkerConfig } from "@arquibancada-viva/config/worker";
 
 export interface WorkerLog {
+  readonly attempt?: number;
+  readonly correlationId?: string;
+  readonly errorCode?: string;
   readonly event: string;
   readonly host?: string;
+  readonly jobId?: string;
+  readonly jobName?: string;
   readonly level: "error" | "info";
   readonly port?: number;
 }

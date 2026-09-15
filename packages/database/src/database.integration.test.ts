@@ -114,7 +114,7 @@ describe("PostgreSQL foundation", () => {
     );
 
     expect(schemas.rows.map((row) => row.schema_name)).toEqual(["app", "auth", "drizzle"]);
-    expect(migrationCount.rows[0]?.count).toBe(2);
+    expect(migrationCount.rows[0]?.count).toBe(3);
 
     const authTables = await emptyRuntime.pool.query<{ table_name: string }>(`
       SELECT table_name
@@ -140,11 +140,11 @@ describe("PostgreSQL foundation", () => {
       SELECT count(*)::integer AS count
       FROM information_schema.tables
       WHERE table_schema = 'app'
-        AND table_name IN ('match_sequences', 'outbox_messages')
+        AND table_name IN ('match_sequences', 'outbox_messages', 'queue_fixture_effects')
     `);
 
-    expect(migrationCount.rows[0]?.count).toBe(2);
-    expect(tableCount.rows[0]?.count).toBe(2);
+    expect(migrationCount.rows[0]?.count).toBe(3);
+    expect(tableCount.rows[0]?.count).toBe(3);
   });
 
   it("migrates the supported previous state without changing its data", async () => {

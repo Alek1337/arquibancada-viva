@@ -6,7 +6,7 @@ import { createWorkerRuntime, registerWorkerShutdown, type WorkerRuntime } from 
 
 export async function startWorker(config: WorkerConfig): Promise<WorkerRuntime> {
   const logger = createWorkerLogger(config.LOG_LEVEL);
-  const runtime = createWorkerRuntime(config, createWorkerDependencies(config), logger);
+  const runtime = createWorkerRuntime(config, createWorkerDependencies(config, logger), logger);
 
   try {
     await runtime.listen();

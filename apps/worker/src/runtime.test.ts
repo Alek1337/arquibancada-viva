@@ -67,9 +67,11 @@ describe("worker operational probes", () => {
 
   it("reports liveness and readiness independently", async () => {
     const close = vi.fn(async () => undefined);
+    const startDependency = vi.fn(async () => undefined);
     const currentRuntime = await start({
-      checkReadiness: async () => undefined,
+      checkReadiness: async () => ({ postgres: "up", redis: "up" }),
       close,
+      start: startDependency,
     });
 
     expect(await probe(currentRuntime, "/health")).toEqual({
@@ -78,7 +80,7 @@ describe("worker operational probes", () => {
     });
     expect(await probe(currentRuntime, "/ready")).toEqual({
       body: {
-        checks: { postgres: "up" },
+        checks: { postgres: "up", redis: "up" },
         service: "worker",
         status: "ready",
       },
@@ -88,14 +90,14 @@ describe("worker operational probes", () => {
     await currentRuntime.close();
     await currentRuntime.close();
     expect(close).toHaveBeenCalledOnce();
+    expect(startDependency).toHaveBeenCalledOnce();
   });
 
   it("keeps liveness up while failed dependencies return 503 readiness", async () => {
     const currentRuntime = await start({
-      checkReadiness: async () => {
-        throw new Error("database unavailable");
-      },
+      checkReadiness: async () => ({ postgres: "down", redis: "up" }),
       close: async () => undefined,
+      start: async () => undefined,
     });
 
     expect((await probe(currentRuntime, "/ready")).statusCode).toBe(503);

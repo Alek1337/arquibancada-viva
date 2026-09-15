@@ -15,6 +15,13 @@
       "when": 1789423343681,
       "tag": "0001_magical_sersi",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789441036993,
+      "tag": "0002_ambitious_cable",
+      "breakpoints": true
     }
   ]
 }

@@ -20,6 +20,11 @@ export {
 } from "./schema/index.js";
 export { authSchema } from "./schema/auth/better-auth.js";
 export {
+  applyQueueFixtureEffect,
+  countQueueFixtureEffects,
+  type QueueFixtureEffectInput,
+} from "./queue-fixture-effects.js";
+export {
   type DatabaseTransaction,
   nextMatchSequence,
   type TransactionOptions,

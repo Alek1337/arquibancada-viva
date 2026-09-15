@@ -6,6 +6,8 @@ import {
   isoUtcDateTimeSchema,
   paginationRequestSchema,
   problemDetailsSchema,
+  technicalFixtureJobDataSchema,
+  technicalFixtureJobId,
   uuidV7Schema,
 } from "../src/index.js";
 
@@ -76,5 +78,21 @@ describe("shared contract primitives", () => {
     expect(schema.safeParse(validEvent).success).toBe(true);
     expect(schema.safeParse({ ...validEvent, version: 2 }).success).toBe(false);
     expect(schema.safeParse({ ...validEvent, sequence: 0 }).success).toBe(false);
+  });
+
+  it("validates versioned technical job payloads and deterministic IDs", () => {
+    const payload = {
+      correlationId: eventId,
+      effectId: matchId,
+      mode: "succeed",
+      version: 1,
+    };
+
+    expect(technicalFixtureJobDataSchema.safeParse(payload).success).toBe(true);
+    expect(technicalFixtureJobDataSchema.safeParse({ ...payload, version: 2 }).success).toBe(false);
+    expect(technicalFixtureJobDataSchema.safeParse({ ...payload, unexpected: true }).success).toBe(
+      false,
+    );
+    expect(technicalFixtureJobId(matchId)).toBe(`technical-fixture-${matchId}`);
   });
 });
