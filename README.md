@@ -43,3 +43,5 @@ O fluxo explícito de migrations, pools e transações PostgreSQL está em `docs
 Os comandos e probes dos três processos estão em `docs/applications.md`.
 
 A fundação compartilhada do Better Auth com NestJS/Fastify, PostgreSQL e Socket.IO está em `docs/authentication.md`.
+
+As garantias de idempotência, claim, retry e entrega da outbox estão em `docs/outbox-and-idempotency.md`.

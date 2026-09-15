@@ -2,7 +2,9 @@ import type { WorkerConfig } from "@arquibancada-viva/config/worker";
 
 export interface WorkerLog {
   readonly attempt?: number;
+  readonly claimed?: number;
   readonly correlationId?: string;
+  readonly deferred?: number;
   readonly errorCode?: string;
   readonly event: string;
   readonly host?: string;
@@ -10,6 +12,7 @@ export interface WorkerLog {
   readonly jobName?: string;
   readonly level: "error" | "info";
   readonly port?: number;
+  readonly published?: number;
 }
 
 export type WorkerLogger = (entry: WorkerLog) => void;

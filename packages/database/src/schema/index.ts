@@ -1,3 +1,4 @@
+export { idempotencyRecords } from "./app/idempotency.js";
 export { matchSequences } from "./app/match-sequences.js";
 export { outboxMessages, outboxStatus } from "./app/outbox.js";
 export { queueFixtureEffects } from "./app/queue-fixture-effects.js";
