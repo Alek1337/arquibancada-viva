@@ -1,18 +1,17 @@
+import type { AuthRuntime } from "@arquibancada-viva/auth";
 import type { ApiConfig } from "@arquibancada-viva/config/api";
 import type { Server as HttpServer } from "node:http";
 import { Server } from "socket.io";
-import type { BetterAuthSpike } from "./auth.js";
-import { resolveBetterAuthSession } from "./session.js";
 
-export interface BetterAuthSocketSpike {
+export interface AuthSocketRuntime {
   close(): Promise<void>;
 }
 
-export function mountBetterAuthSocketSpike(
+export function mountAuthSocket(
   server: HttpServer,
-  auth: BetterAuthSpike,
+  auth: AuthRuntime,
   config: ApiConfig,
-): BetterAuthSocketSpike {
+): AuthSocketRuntime {
   const io = new Server(server, {
     allowRequest(request, callback) {
       const origin = request.headers.origin;
@@ -24,18 +23,18 @@ export function mountBetterAuthSocketSpike(
     },
     serveClient: false,
   });
-  const namespace = io.of("/auth-spike");
+  const namespace = io.of("/auth");
 
   namespace.use(async (socket, next) => {
     try {
-      const session = await resolveBetterAuthSession(auth, socket.handshake.headers);
-      if (!session) {
+      const identity = await auth.resolveIdentity(socket.handshake.headers);
+      if (!identity) {
         const error = new Error("Authentication required");
         Object.assign(error, { data: { code: "UNAUTHORIZED" } });
         next(error);
         return;
       }
-      socket.data.authSession = session;
+      socket.data.authIdentity = identity;
       next();
     } catch {
       const error = new Error("Authentication failed");
@@ -45,11 +44,7 @@ export function mountBetterAuthSocketSpike(
   });
 
   namespace.on("connection", (socket) => {
-    const session = socket.data.authSession;
-    socket.emit("auth:session", {
-      sessionId: session.session.id,
-      userId: session.user.id,
-    });
+    socket.emit("auth:session", socket.data.authIdentity);
   });
 
   let closePromise: Promise<void> | undefined;

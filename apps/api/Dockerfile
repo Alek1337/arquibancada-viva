@@ -4,11 +4,13 @@ WORKDIR /workspace
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
 COPY apps/api/package.json apps/api/package.json
+COPY packages/auth/package.json packages/auth/package.json
 COPY packages/config/package.json packages/config/package.json
 COPY packages/database/package.json packages/database/package.json
 RUN pnpm install --frozen-lockfile
 
 COPY apps/api apps/api
+COPY packages/auth packages/auth
 COPY packages/config packages/config
 COPY packages/database packages/database
 RUN pnpm --filter @arquibancada-viva/api build

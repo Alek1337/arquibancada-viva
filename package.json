@@ -9,6 +9,7 @@
     "pnpm": "11.19.0"
   },
   "scripts": {
+    "auth:schema": "pnpm --filter @arquibancada-viva/auth auth:schema",
     "dev": "pnpm -r --parallel --if-present dev",
     "dev:api": "pnpm --filter @arquibancada-viva/api dev",
     "dev:web": "pnpm --filter @arquibancada-viva/web dev",

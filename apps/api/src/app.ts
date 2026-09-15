@@ -1,18 +1,21 @@
 import type { ApiConfig } from "@arquibancada-viva/config/api";
 import { NestFactory } from "@nestjs/core";
 import { FastifyAdapter, type NestFastifyApplication } from "@nestjs/platform-fastify";
+import type { Writable } from "node:stream";
 import { registerAppModule } from "./app.module.js";
 import {
   createApiDependencies,
   type ApiDependencies,
   isApiRuntimeDependencies,
 } from "./platform/dependencies.js";
-import { registerBetterAuthSpike } from "./spikes/better-auth/runtime.js";
+import { createApiLoggerOptions } from "./platform/logger.js";
+import { registerAuthRuntime } from "./platform/auth/runtime.js";
 
 export interface CreateApiApplicationOptions {
   readonly dependencies?: ApiDependencies;
-  readonly enableAuthSpike?: boolean;
+  readonly enableAuth?: boolean;
   readonly enableShutdownHooks?: boolean;
+  readonly loggerStream?: Writable;
   readonly logger?: boolean;
 }
 
@@ -24,7 +27,10 @@ export async function createApiApplication(
 
   try {
     const adapter = new FastifyAdapter({
-      logger: options.logger === false ? false : { level: config.LOG_LEVEL },
+      logger:
+        options.logger === false
+          ? false
+          : createApiLoggerOptions(config.LOG_LEVEL, options.loggerStream),
     });
     const application = await NestFactory.create<NestFastifyApplication>(
       registerAppModule(dependencies),
@@ -36,12 +42,12 @@ export async function createApiApplication(
     if (options.enableShutdownHooks !== false) {
       application.enableShutdownHooks();
     }
-    const enableAuthSpike = options.enableAuthSpike ?? options.dependencies === undefined;
-    if (enableAuthSpike) {
+    const enableAuth = options.enableAuth ?? options.dependencies === undefined;
+    if (enableAuth) {
       if (!isApiRuntimeDependencies(dependencies)) {
-        throw new Error("O spike de autenticação requer dependências runtime da API.");
+        throw new Error("A autenticação requer dependências runtime da API.");
       }
-      registerBetterAuthSpike(application, config, dependencies);
+      registerAuthRuntime(application, config, dependencies);
     }
 
     return application;

@@ -6,6 +6,7 @@ import {
 } from "@arquibancada-viva/database";
 import type { NestFastifyApplication } from "@nestjs/platform-fastify";
 import { io, type Socket } from "socket.io-client";
+import { Writable } from "node:stream";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createApiApplication } from "../../app.js";
 
@@ -15,7 +16,7 @@ const adminDatabaseUrl =
   "postgresql://app:app@127.0.0.1:5432/arquibancada_viva";
 const trustedOrigin = "https://web.example.test";
 const testRun = `${process.pid}_${Date.now().toString(36)}`.toLowerCase();
-const databaseName = `av_tft007_auth_${testRun}`;
+const databaseName = `av_tft008_auth_${testRun}`;
 
 function quoteDatabaseName(value: string): string {
   if (!/^[a-z0-9_]+$/u.test(value)) {
@@ -38,7 +39,7 @@ function buildConfig(): ApiConfig {
     AUTH_BASE_URL: "https://api.example.test",
     AUTH_SECRET: "integration-only-auth-secret-32-characters",
     DATABASE_URL: databaseUrl(databaseName),
-    LOG_LEVEL: "fatal",
+    LOG_LEVEL: "info",
     NODE_ENV: "production",
     REDIS_URL: "redis://127.0.0.1:6379",
     S3_ACCESS_KEY_ID: "integration-access",
@@ -66,7 +67,7 @@ function connectAuthenticatedSocket(
   readonly socket: Socket;
 }> {
   return new Promise((resolve, reject) => {
-    const socket = io(`${baseURL}/auth-spike`, {
+    const socket = io(`${baseURL}/auth`, {
       autoConnect: false,
       extraHeaders: { Cookie: cookie, Origin: trustedOrigin },
       forceNew: true,
@@ -92,7 +93,7 @@ function connectAuthenticatedSocket(
 
 function expectRejectedSocket(baseURL: string, cookie: string): Promise<void> {
   return new Promise((resolve, reject) => {
-    const socket = io(`${baseURL}/auth-spike`, {
+    const socket = io(`${baseURL}/auth`, {
       autoConnect: false,
       extraHeaders: { Cookie: cookie, Origin: trustedOrigin },
       forceNew: true,
@@ -118,8 +119,15 @@ function expectRejectedSocket(baseURL: string, cookie: string): Promise<void> {
   });
 }
 
-describe("Better Auth official Fastify spike", () => {
+describe("shared auth foundation over Fastify and Socket.IO", () => {
   const adminRuntime = createMigrationDatabase(adminDatabaseUrl);
+  const logChunks: string[] = [];
+  const logStream = new Writable({
+    write(chunk, _encoding, callback) {
+      logChunks.push(chunk.toString());
+      callback();
+    },
+  });
   let migrationRuntime: DatabaseRuntime;
   let application: NestFastifyApplication;
   let baseURL: string;
@@ -129,7 +137,7 @@ describe("Better Auth official Fastify spike", () => {
     migrationRuntime = createMigrationDatabase(databaseUrl(databaseName));
     await applyMigrations(migrationRuntime.database);
 
-    application = await createApiApplication(buildConfig());
+    application = await createApiApplication(buildConfig(), { loggerStream: logStream });
     await application.listen(0, "127.0.0.1");
     const address = application.getHttpServer().address();
     if (!address || typeof address === "string") {
@@ -174,7 +182,7 @@ describe("Better Auth official Fastify spike", () => {
     const signUp = await fetch(`${baseURL}/v1/auth/sign-up/email`, {
       body: JSON.stringify({
         email,
-        name: "Fixture TFT-007",
+        name: "Fixture TFT-008",
         password: "Strong-password-42",
       }),
       headers: { "content-type": "application/json", origin: trustedOrigin },
@@ -187,6 +195,7 @@ describe("Better Auth official Fastify spike", () => {
     expect(cookies.setCookies.join("; ")).toMatch(/HttpOnly/iu);
     expect(cookies.setCookies.join("; ")).toMatch(/Secure/iu);
     expect(cookies.setCookies.join("; ")).toMatch(/SameSite=Lax/iu);
+    const cookieToken = cookies.header.split("=", 2)[1];
 
     const sessionResponse = await fetch(`${baseURL}/v1/auth/get-session`, {
       headers: { cookie: cookies.header, origin: trustedOrigin },
@@ -195,7 +204,7 @@ describe("Better Auth official Fastify spike", () => {
       session: { id: string };
       user: { id: string };
     };
-    const protectedRest = await fetch(`${baseURL}/v1/auth-spike/session`, {
+    const protectedRest = await fetch(`${baseURL}/v1/me/session`, {
       headers: { cookie: cookies.header, origin: trustedOrigin },
     });
     const restPayload = await protectedRest.json();
@@ -222,11 +231,19 @@ describe("Better Auth official Fastify spike", () => {
     });
     expect(signOut.status).toBe(200);
 
-    const revokedRest = await fetch(`${baseURL}/v1/auth-spike/session`, {
+    const revokedRest = await fetch(`${baseURL}/v1/me/session`, {
       headers: { cookie: cookies.header, origin: trustedOrigin },
     });
     expect(revokedRest.status).toBe(401);
     await expectRejectedSocket(baseURL, cookies.header);
+
+    const capturedLogs = logChunks.join("");
+    expect(capturedLogs).toContain("auth.request_completed");
+    expect(capturedLogs).not.toContain("Strong-password-42");
+    expect(capturedLogs).not.toContain(email);
+    expect(capturedLogs).not.toContain(cookies.header);
+    expect(cookieToken).toBeTruthy();
+    expect(capturedLogs).not.toContain(cookieToken);
   });
 
   it("rejects a state-changing request from an untrusted origin", async () => {

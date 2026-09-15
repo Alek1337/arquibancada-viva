@@ -1,0 +1,30 @@
+{
+  "name": "@arquibancada-viva/auth",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "auth:schema": "auth generate --config src/better-auth.cli.ts --output ../database/src/schema/auth/better-auth.ts --yes",
+    "format": "biome format --write .",
+    "lint": "biome lint .",
+    "test": "vitest run",
+    "typecheck": "tsc --project tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@arquibancada-viva/config": "workspace:*",
+    "@arquibancada-viva/database": "workspace:*",
+    "@better-auth/drizzle-adapter": "1.7.4",
+    "better-auth": "1.7.4"
+  },
+  "devDependencies": {
+    "@types/node": "24.13.4",
+    "auth": "1.7.4"
+  }
+}

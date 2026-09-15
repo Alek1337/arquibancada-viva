@@ -18,6 +18,7 @@ Os comandos de desenvolvimento e os gates comuns podem ser executados a partir d
 ```text
 pnpm dev
 pnpm build
+pnpm auth:schema
 pnpm lint
 pnpm format:check
 pnpm typecheck
@@ -41,4 +42,4 @@ O fluxo explícito de migrations, pools e transações PostgreSQL está em `docs
 
 Os comandos e probes dos três processos estão em `docs/applications.md`.
 
-A prova de compatibilidade do Better Auth com NestJS/Fastify, PostgreSQL e Socket.IO está em `docs/auth-spike.md`.
+A fundação compartilhada do Better Auth com NestJS/Fastify, PostgreSQL e Socket.IO está em `docs/authentication.md`.

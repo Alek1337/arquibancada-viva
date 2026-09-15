@@ -3,7 +3,7 @@ import { betterAuthDatabaseSchema, type Database } from "@arquibancada-viva/data
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { betterAuth } from "better-auth/minimal";
 
-export function createBetterAuthSpike(config: ApiConfig, database: Database) {
+export function createBetterAuth(config: ApiConfig, database: Database) {
   return betterAuth({
     advanced: {
       cookiePrefix: "arquibancada-viva",
@@ -26,4 +26,4 @@ export function createBetterAuthSpike(config: ApiConfig, database: Database) {
   });
 }
 
-export type BetterAuthSpike = ReturnType<typeof createBetterAuthSpike>;
+export type BetterAuthInstance = ReturnType<typeof createBetterAuth>;
