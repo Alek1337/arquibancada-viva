@@ -26,6 +26,7 @@
     "@arquibancada-viva/database": "workspace:*",
     "@arquibancada-viva/storage": "workspace:*",
     "@fastify/cors": "11.3.0",
+    "@fastify/helmet": "13.0.0",
     "@nestjs/common": "11.2.3",
     "@nestjs/core": "11.2.3",
     "@nestjs/platform-fastify": "11.2.3",

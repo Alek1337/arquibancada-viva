@@ -49,3 +49,5 @@ As garantias de idempotência, claim, retry e entrega da outbox estão em `docs/
 O protocolo Socket.IO de snapshot, replay, deduplicação e degradação sem Redis está em `docs/realtime.md`.
 
 O contrato privado S3-compatible, seus estágios e URLs assinadas estão em `docs/object-storage.md`.
+
+A política HTTP, rate limiting, redaction de logs e matriz de exposição estão em `docs/security.md`.

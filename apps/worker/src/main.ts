@@ -19,7 +19,7 @@ export async function startWorker(config: WorkerConfig): Promise<WorkerRuntime> 
 }
 
 function reportBootstrapFailure(error: unknown): void {
-  const safeError = error instanceof Error ? { message: error.message, name: error.name } : {};
+  const safeError = error instanceof Error ? { name: error.name } : {};
   console.error(JSON.stringify({ error: safeError, event: "worker.bootstrap_failed" }));
 }
 

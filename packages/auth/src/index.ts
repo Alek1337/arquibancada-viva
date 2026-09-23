@@ -5,5 +5,6 @@ export {
   AUTH_LOG_REDACTION_PATHS,
   createAuthRequestLog,
   redactAuthLogValue,
+  redactLogValue,
   sanitizeAuthLogPath,
 } from "./redaction.js";

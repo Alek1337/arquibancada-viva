@@ -28,6 +28,11 @@ describe("process configuration", () => {
       API_HOST: "127.0.0.1",
       API_PORT: 3_001,
       API_DATABASE_POOL_MAX: 10,
+      API_BODY_LIMIT_BYTES: 65_536,
+      RATE_LIMIT_AUTH_MAX: 10,
+      RATE_LIMIT_GENERAL_MAX: 120,
+      RATE_LIMIT_MUTATION_MAX: 30,
+      RATE_LIMIT_WINDOW_MS: 60_000,
       S3_FORCE_PATH_STYLE: true,
     });
   });
@@ -50,6 +55,21 @@ describe("process configuration", () => {
         WEB_ORIGIN: "http://localhost:3000",
         REDIS_URL: "redis://localhost:6379",
         AUTH_SECRET: "development-auth-secret-change-me-now",
+        ...storageConfig,
+      }),
+    ).toThrow();
+  });
+
+  it("rejects unsafe HTTP and rate-limit bounds", () => {
+    expect(() =>
+      parseApiConfig({
+        AUTH_BASE_URL: "http://localhost:3001",
+        WEB_ORIGIN: "http://localhost:3000",
+        DATABASE_URL: "postgresql://app:app@localhost:5432/app",
+        REDIS_URL: "redis://localhost:6379",
+        AUTH_SECRET: "development-auth-secret-change-me-now",
+        API_BODY_LIMIT_BYTES: "1048577",
+        RATE_LIMIT_AUTH_MAX: "0",
         ...storageConfig,
       }),
     ).toThrow();

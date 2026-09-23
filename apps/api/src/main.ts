@@ -21,7 +21,7 @@ export async function startApi(config: ApiConfig): Promise<NestFastifyApplicatio
 }
 
 function reportBootstrapFailure(error: unknown): void {
-  const safeError = error instanceof Error ? { message: error.message, name: error.name } : {};
+  const safeError = error instanceof Error ? { name: error.name } : {};
   console.error(JSON.stringify({ error: safeError, event: "api.bootstrap_failed" }));
 }
 

@@ -23,6 +23,7 @@ O gate de fronteiras rejeita qualquer tentativa da web de importar `config/api` 
 | `NEXT_PUBLIC_SOCKET_URL` | web | sim | URL HTTP(S) pública do Socket.IO |
 | `API_HOST` | API | não | interface de bind; `127.0.0.1` local ou `0.0.0.0` no contêiner |
 | `API_PORT` | API | não | inteiro entre 1 e 65535; padrão 3001 |
+| `API_BODY_LIMIT_BYTES` | API | não | limite global do corpo HTTP, entre 1 KiB e 1 MiB; padrão 65536 |
 | `WEB_ORIGIN` | API | sim | origem HTTP(S) aceita pela API |
 | `AUTH_BASE_URL` | API | sim | URL HTTP(S) pública da API usada pelo Better Auth |
 | `AUTH_SECRET` | API | sim | segredo com no mínimo 32 caracteres |
@@ -30,6 +31,10 @@ O gate de fronteiras rejeita qualquer tentativa da web de importar `config/api` 
 | `API_DATABASE_POOL_MAX` | API | não | limite do pool PostgreSQL da API; padrão 10 |
 | `WORKER_DATABASE_POOL_MAX` | worker | não | limite do pool PostgreSQL do worker; padrão 5 |
 | `REDIS_URL` | API/worker | sim | URL `redis://` ou `rediss://` |
+| `RATE_LIMIT_AUTH_MAX` | API | não | mutações de autenticação por janela; padrão 10 |
+| `RATE_LIMIT_GENERAL_MAX` | API | não | leituras por janela; padrão 120 |
+| `RATE_LIMIT_MUTATION_MAX` | API | não | demais mutações por janela; padrão 30 |
+| `RATE_LIMIT_WINDOW_MS` | API | não | janela do rate limiter entre 1 s e 1 h; padrão 60000 |
 | `POSTGRES_PORT` | Compose | não | porta loopback do PostgreSQL; padrão 5432 |
 | `REDIS_PORT` | Compose | não | porta loopback do Redis; padrão 6379 |
 | `S3_ENDPOINT` | API/worker | sim | endpoint do armazenamento compatível com S3 |

@@ -70,4 +70,30 @@ describe("Fastify auth logging", () => {
       await fastify.close();
     }
   });
+
+  it("returns structured details for an invalid session", async () => {
+    const auth: AuthRuntime = {
+      async handle() {
+        throw new Error("not used");
+      },
+      async resolveIdentity() {
+        return null;
+      },
+    };
+    const fastify = Fastify({ logger: false });
+    mountAuthFastify(fastify, auth, config);
+
+    try {
+      const response = await fastify.inject({ method: "GET", url: "/v1/me/session" });
+      expect(response.statusCode).toBe(401);
+      expect(response.json()).toMatchObject({
+        code: "UNAUTHENTICATED",
+        status: 401,
+        type: "about:blank",
+      });
+      expect(response.body).not.toContain("stack");
+    } finally {
+      await fastify.close();
+    }
+  });
 });

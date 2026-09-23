@@ -4,8 +4,8 @@ import {
   createAuthWebRequest,
 } from "@arquibancada-viva/auth";
 import type { ApiConfig } from "@arquibancada-viva/config/api";
-import fastifyCors from "@fastify/cors";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
+import { createProblemDetails, sendProblem } from "../security/problem-details.js";
 
 async function forwardAuthResponse(response: Response, reply: FastifyReply) {
   reply.status(response.status);
@@ -26,26 +26,6 @@ export function mountAuthFastify(
   auth: AuthRuntime,
   config: ApiConfig,
 ): void {
-  fastify.register(fastifyCors, {
-    allowedHeaders: ["content-type", "authorization", "x-requested-with"],
-    credentials: true,
-    maxAge: 86_400,
-    methods: ["GET", "POST", "OPTIONS"],
-    origin(origin, callback) {
-      callback(null, origin === undefined || origin === config.WEB_ORIGIN);
-    },
-  });
-
-  fastify.addHook("onRequest", async (request, reply) => {
-    const origin = request.headers.origin;
-    if (origin !== undefined && origin !== config.WEB_ORIGIN) {
-      return reply.status(403).send({
-        code: "ORIGIN_NOT_ALLOWED",
-        message: "Request origin is not allowed",
-      });
-    }
-  });
-
   fastify.route({
     async handler(request: FastifyRequest, reply: FastifyReply) {
       try {
@@ -69,7 +49,7 @@ export function mountAuthFastify(
         request.log.error(
           createAuthRequestLog({ error, method: request.method, url: request.url }),
         );
-        return reply.status(500).send({ code: "AUTH_FAILURE", message: "Authentication failed" });
+        return sendProblem(reply, createProblemDetails(500, request.id));
       }
     },
     method: ["GET", "POST"],
@@ -79,7 +59,7 @@ export function mountAuthFastify(
   fastify.get("/v1/me/session", async (request, reply) => {
     const identity = await auth.resolveIdentity(request.headers);
     if (!identity) {
-      return reply.status(401).send({ code: "UNAUTHORIZED", message: "Authentication required" });
+      return sendProblem(reply, createProblemDetails(401, request.id));
     }
     return reply.send(identity);
   });

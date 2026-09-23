@@ -32,6 +32,7 @@ export function isApiRuntimeDependencies(
 ): dependencies is ApiRuntimeDependencies {
   return (
     "database" in dependencies &&
+    "objectStorage" in dependencies &&
     "registerRedisReadiness" in dependencies &&
     "registerShutdown" in dependencies
   );
@@ -41,14 +42,16 @@ export function createApiDependencies(config: ApiConfig): ApiRuntimeDependencies
   const databaseRuntime: DatabaseRuntime = createApiDatabase(config);
   const objectStorage = createS3ObjectStorage(config);
   const shutdownTasks: ApiShutdownTask[] = [];
-  let redisReadiness: (() => Promise<void>) | undefined;
+  const redisReadinessChecks: (() => Promise<void>)[] = [];
   let closePromise: Promise<void> | undefined;
 
   return {
     async checkReadiness() {
       const [postgres, redis, storage] = await Promise.allSettled([
         checkDatabaseConnection(databaseRuntime.database),
-        redisReadiness ? redisReadiness() : Promise.reject(new Error("Redis não registrado.")),
+        redisReadinessChecks.length > 0
+          ? Promise.all(redisReadinessChecks.map((check) => check()))
+          : Promise.reject(new Error("Redis não registrado.")),
         objectStorage.checkConnection(),
       ]);
       return {
@@ -86,10 +89,7 @@ export function createApiDependencies(config: ApiConfig): ApiRuntimeDependencies
     database: databaseRuntime.database,
     objectStorage,
     registerRedisReadiness(check) {
-      if (redisReadiness) {
-        throw new Error("A readiness do Redis já foi registrada.");
-      }
-      redisReadiness = check;
+      redisReadinessChecks.push(check);
     },
     registerShutdown(task) {
       if (closePromise) {

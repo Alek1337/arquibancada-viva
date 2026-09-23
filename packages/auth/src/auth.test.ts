@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { toAuthIdentity } from "./identity.js";
 import { createAuthWebRequest } from "./request.js";
-import { createAuthRequestLog, redactAuthLogValue } from "./redaction.js";
+import { createAuthRequestLog, redactAuthLogValue, redactLogValue } from "./redaction.js";
 
 describe("shared auth foundation", () => {
   it("exposes only stable identity primitives", () => {
@@ -95,5 +95,18 @@ describe("shared auth foundation", () => {
     expect(failure).toContain("Error");
     expect(failure).not.toContain("must-not-appear");
     expect(failure).not.toContain("query-token-must-not-appear");
+  });
+
+  it("redacts S3 credentials and signed URLs in generic logs", () => {
+    const output = JSON.stringify(
+      redactLogValue({
+        S3_ACCESS_KEY_ID: "must-not-appear-access",
+        nested: { secret_access_key: "must-not-appear-secret" },
+        url: "https://storage.example.test/object?X-Amz-Signature=must-not-appear-signature",
+      }),
+    );
+
+    expect(output).not.toContain("must-not-appear");
+    expect(output.match(/\[REDACTED\]/gu)?.length).toBe(3);
   });
 });

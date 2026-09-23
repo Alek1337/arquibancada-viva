@@ -2,17 +2,27 @@ const REDACTED = "[REDACTED]";
 const CIRCULAR = "[CIRCULAR]";
 const sensitiveKeys = new Set([
   "accesstoken",
+  "accesskeyid",
+  "apikey",
   "authorization",
+  "clientsecret",
   "cookie",
+  "credential",
   "email",
   "idtoken",
   "passcode",
   "password",
   "refreshtoken",
+  "s3accesskeyid",
+  "s3secretaccesskey",
+  "secretaccesskey",
   "secret",
   "sessiontoken",
   "setcookie",
+  "signedurl",
   "token",
+  "xamzcredential",
+  "xamzsignature",
 ]);
 const safeErrorNames = new Set(["AggregateError", "Error", "RangeError", "TypeError"]);
 
@@ -41,13 +51,24 @@ export const AUTH_LOG_REDACTION_PATHS = [
   "body.accessToken",
   "body.refreshToken",
   "body.idToken",
+  "req.query.token",
+  "req.query.signature",
+  "req.query['X-Amz-Credential']",
+  "req.query['X-Amz-Signature']",
+  "S3_ACCESS_KEY_ID",
+  "S3_SECRET_ACCESS_KEY",
 ] as const;
+
+const sensitiveQueryParameter = /[?&](?:x-amz-(?:credential|signature)|signature|token)=/iu;
 
 function normalizedKey(key: string): string {
   return key.replaceAll("-", "").replaceAll("_", "").replaceAll(".", "").toLowerCase();
 }
 
 function redact(value: unknown, seen: WeakSet<object>): unknown {
+  if (typeof value === "string") {
+    return sensitiveQueryParameter.test(value) ? REDACTED : value;
+  }
   if (value === null || typeof value !== "object") {
     return value;
   }
@@ -74,6 +95,8 @@ function redact(value: unknown, seen: WeakSet<object>): unknown {
 export function redactAuthLogValue(value: unknown): unknown {
   return redact(value, new WeakSet());
 }
+
+export const redactLogValue = redactAuthLogValue;
 
 export interface AuthRequestLogInput {
   readonly error?: unknown;
