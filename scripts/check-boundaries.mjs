@@ -15,6 +15,7 @@ const PACKAGE_UNITS = [
   "packages/contracts",
   "packages/database",
   "packages/game-core",
+  "packages/storage",
   "packages/testing",
   "packages/ui",
 ];
@@ -29,6 +30,7 @@ const POLICIES = new Map([
       "packages/contracts",
       "packages/database",
       "packages/game-core",
+      "packages/storage",
     ]),
   ],
   [
@@ -39,6 +41,7 @@ const POLICIES = new Map([
       "packages/contracts",
       "packages/database",
       "packages/game-core",
+      "packages/storage",
     ]),
   ],
   ["packages/auth", new Set(["packages/config", "packages/database"])],
@@ -46,6 +49,7 @@ const POLICIES = new Map([
   ["packages/contracts", new Set()],
   ["packages/database", new Set(["packages/config"])],
   ["packages/game-core", new Set()],
+  ["packages/storage", new Set(["packages/config"])],
   ["packages/testing", new Set(PACKAGE_UNITS.filter((unit) => unit !== "packages/testing"))],
   ["packages/ui", new Set(["packages/contracts"])],
 ]);

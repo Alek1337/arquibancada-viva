@@ -6,13 +6,17 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
 COPY apps/api/package.json apps/api/package.json
 COPY packages/auth/package.json packages/auth/package.json
 COPY packages/config/package.json packages/config/package.json
+COPY packages/contracts/package.json packages/contracts/package.json
 COPY packages/database/package.json packages/database/package.json
+COPY packages/storage/package.json packages/storage/package.json
 RUN pnpm install --frozen-lockfile
 
 COPY apps/api apps/api
 COPY packages/auth packages/auth
 COPY packages/config packages/config
+COPY packages/contracts packages/contracts
 COPY packages/database packages/database
+COPY packages/storage packages/storage
 RUN pnpm --filter @arquibancada-viva/api build
 
 FROM node:24.14.1-alpine3.23 AS runtime

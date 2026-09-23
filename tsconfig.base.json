@@ -23,6 +23,7 @@
       "@arquibancada-viva/contracts": ["./packages/contracts/src/index.ts"],
       "@arquibancada-viva/database": ["./packages/database/src/index.ts"],
       "@arquibancada-viva/game-core": ["./packages/game-core/src/index.ts"],
+      "@arquibancada-viva/storage": ["./packages/storage/src/index.ts"],
       "@arquibancada-viva/testing": ["./packages/testing/src/index.ts"],
       "@arquibancada-viva/ui": ["./packages/ui/src/index.ts"]
     },

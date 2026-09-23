@@ -23,12 +23,12 @@ Também é possível iniciar um processo isolado com `pnpm dev:web`, `pnpm dev:a
 | Processo | Liveness | Readiness | Dependência verificada |
 |---|---|---|---|
 | web | `GET /health` | `GET /ready` | configuração pública válida |
-| API | `GET /v1/health` | `GET /v1/ready` | PostgreSQL |
-| worker | `GET /health` | `GET /ready` | PostgreSQL |
+| API | `GET /v1/health` | `GET /v1/ready` | PostgreSQL, Redis e S3-compatible |
+| worker | `GET /health` | `GET /ready` | PostgreSQL, Redis e S3-compatible |
 
 Liveness indica que o processo está vivo. Readiness retorna HTTP 503 quando uma dependência obrigatória não responde; isso permite retirar o processo de tráfego sem confundir a falha com crash. O worker faz bind somente em loopback no desenvolvimento e não oferece rotas de produto.
 
-API e worker validam toda a configuração antes de abrir portas. Ambos fecham pools e listeners no encerramento gracioso. Em Windows, `SIGINT` é o caminho local confiável; contêineres Linux usam `SIGTERM`.
+API e worker validam toda a configuração antes de abrir portas. Ambos fecham pools, clientes S3 e listeners no encerramento gracioso. Em Windows, `SIGINT` é o caminho local confiável; contêineres Linux usam `SIGTERM`.
 
 ## Builds e contêineres
 

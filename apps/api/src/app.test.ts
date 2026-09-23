@@ -33,7 +33,7 @@ describe("API operational probes", () => {
   it("keeps liveness up and reports readiness when dependencies respond", async () => {
     const close = vi.fn(async () => undefined);
     const application = await createTestApplication({
-      checkReadiness: async () => ({ postgres: "up", redis: "up" }),
+      checkReadiness: async () => ({ postgres: "up", redis: "up", storage: "up" }),
       close,
     });
 
@@ -45,7 +45,7 @@ describe("API operational probes", () => {
     expect(health.json()).toEqual({ service: "api", status: "ok" });
     expect(readiness.statusCode).toBe(200);
     expect(readiness.json()).toEqual({
-      checks: { postgres: "up", redis: "up" },
+      checks: { postgres: "up", redis: "up", storage: "up" },
       service: "api",
       status: "ready",
     });
@@ -56,7 +56,7 @@ describe("API operational probes", () => {
 
   it("returns 503 readiness without taking liveness down", async () => {
     const application = await createTestApplication({
-      checkReadiness: async () => ({ postgres: "down", redis: "up" }),
+      checkReadiness: async () => ({ postgres: "down", redis: "up", storage: "down" }),
       close: async () => undefined,
     });
 
@@ -66,7 +66,7 @@ describe("API operational probes", () => {
 
     expect(readiness.statusCode).toBe(503);
     expect(readiness.json()).toMatchObject({
-      checks: { postgres: "down", redis: "up" },
+      checks: { postgres: "down", redis: "up", storage: "down" },
       service: "api",
       status: "not_ready",
     });

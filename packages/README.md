@@ -7,6 +7,7 @@ Diretório reservado aos limites reutilizáveis aprovados no Design:
 - `contracts`
 - `database`
 - `game-core`
+- `storage`
 - `testing`
 - `ui`
 

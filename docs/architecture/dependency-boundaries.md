@@ -4,8 +4,8 @@ O monorepo usa aliases `@arquibancada-viva/*` e uma direção única de dependê
 
 ```text
 apps/web    -> ui, contracts, config/client
-apps/api    -> auth, contracts, database, game-core, config
-apps/worker -> auth, contracts, database, game-core, config
+apps/api    -> auth, contracts, database, game-core, storage, config
+apps/worker -> auth, contracts, database, game-core, storage, config
 
 auth      -> database, config
 database  -> config
@@ -13,6 +13,7 @@ ui        -> contracts
 contracts -> nenhuma dependência interna
 config    -> nenhuma dependência interna
 game-core -> nenhuma dependência interna ou de infraestrutura
+storage   -> config
 testing   -> pacotes compartilhados, nunca apps
 ```
 

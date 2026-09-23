@@ -47,3 +47,5 @@ A fundação compartilhada do Better Auth com NestJS/Fastify, PostgreSQL e Socke
 As garantias de idempotência, claim, retry e entrega da outbox estão em `docs/outbox-and-idempotency.md`.
 
 O protocolo Socket.IO de snapshot, replay, deduplicação e degradação sem Redis está em `docs/realtime.md`.
+
+O contrato privado S3-compatible, seus estágios e URLs assinadas estão em `docs/object-storage.md`.

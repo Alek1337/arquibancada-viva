@@ -5,6 +5,7 @@ import {
   createApiDatabase,
   type DatabaseRuntime,
 } from "@arquibancada-viva/database";
+import { createS3ObjectStorage, type ObjectStorage } from "@arquibancada-viva/storage";
 
 export interface ApiDependencies {
   checkReadiness(): Promise<ApiReadiness>;
@@ -14,12 +15,14 @@ export interface ApiDependencies {
 export interface ApiReadiness {
   readonly postgres: "down" | "up";
   readonly redis: "down" | "up";
+  readonly storage: "down" | "up";
 }
 
 export type ApiShutdownTask = () => Promise<void>;
 
 export interface ApiRuntimeDependencies extends ApiDependencies {
   readonly database: Database;
+  readonly objectStorage: ObjectStorage;
   registerRedisReadiness(check: () => Promise<void>): void;
   registerShutdown(task: ApiShutdownTask): void;
 }
@@ -36,19 +39,22 @@ export function isApiRuntimeDependencies(
 
 export function createApiDependencies(config: ApiConfig): ApiRuntimeDependencies {
   const databaseRuntime: DatabaseRuntime = createApiDatabase(config);
+  const objectStorage = createS3ObjectStorage(config);
   const shutdownTasks: ApiShutdownTask[] = [];
   let redisReadiness: (() => Promise<void>) | undefined;
   let closePromise: Promise<void> | undefined;
 
   return {
     async checkReadiness() {
-      const [postgres, redis] = await Promise.allSettled([
+      const [postgres, redis, storage] = await Promise.allSettled([
         checkDatabaseConnection(databaseRuntime.database),
         redisReadiness ? redisReadiness() : Promise.reject(new Error("Redis não registrado.")),
+        objectStorage.checkConnection(),
       ]);
       return {
         postgres: postgres.status === "fulfilled" ? "up" : "down",
         redis: redis.status === "fulfilled" ? "up" : "down",
+        storage: storage.status === "fulfilled" ? "up" : "down",
       };
     },
     close() {
@@ -62,6 +68,11 @@ export function createApiDependencies(config: ApiConfig): ApiRuntimeDependencies
           }
         }
         try {
+          await objectStorage.close();
+        } catch (error) {
+          failures.push(error);
+        }
+        try {
           await databaseRuntime.close();
         } catch (error) {
           failures.push(error);
@@ -73,6 +84,7 @@ export function createApiDependencies(config: ApiConfig): ApiRuntimeDependencies
       return closePromise;
     },
     database: databaseRuntime.database,
+    objectStorage,
     registerRedisReadiness(check) {
       if (redisReadiness) {
         throw new Error("A readiness do Redis já foi registrada.");

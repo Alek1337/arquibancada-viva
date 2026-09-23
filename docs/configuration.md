@@ -38,6 +38,7 @@ O gate de fronteiras rejeita qualquer tentativa da web de importar `config/api` 
 | `S3_BUCKET` | API/worker | sim | bucket privado ou de quarentena |
 | `S3_ACCESS_KEY_ID` | API/worker | sim | identificador de acesso; nunca registrar em log |
 | `S3_SECRET_ACCESS_KEY` | API/worker | sim | segredo com no mínimo 32 caracteres; nunca registrar em log |
+| `S3_FORCE_PATH_STYLE` | API/worker | não | `true` no RustFS local; use `false` quando o provedor exigir virtual host style |
 | `WORKER_CONCURRENCY` | worker | não | inteiro de 1 a 100; padrão 5 |
 | `WORKER_PROBE_HOST` | worker | não | interface do servidor operacional; padrão `127.0.0.1` |
 | `WORKER_PROBE_PORT` | worker | não | porta interna de health/readiness; padrão 3002 |

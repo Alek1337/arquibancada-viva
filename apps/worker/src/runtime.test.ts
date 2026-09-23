@@ -69,7 +69,7 @@ describe("worker operational probes", () => {
     const close = vi.fn(async () => undefined);
     const startDependency = vi.fn(async () => undefined);
     const currentRuntime = await start({
-      checkReadiness: async () => ({ postgres: "up", redis: "up" }),
+      checkReadiness: async () => ({ postgres: "up", redis: "up", storage: "up" }),
       close,
       start: startDependency,
     });
@@ -80,7 +80,7 @@ describe("worker operational probes", () => {
     });
     expect(await probe(currentRuntime, "/ready")).toEqual({
       body: {
-        checks: { postgres: "up", redis: "up" },
+        checks: { postgres: "up", redis: "up", storage: "up" },
         service: "worker",
         status: "ready",
       },
@@ -95,7 +95,7 @@ describe("worker operational probes", () => {
 
   it("keeps liveness up while failed dependencies return 503 readiness", async () => {
     const currentRuntime = await start({
-      checkReadiness: async () => ({ postgres: "down", redis: "up" }),
+      checkReadiness: async () => ({ postgres: "down", redis: "up", storage: "down" }),
       close: async () => undefined,
       start: async () => undefined,
     });

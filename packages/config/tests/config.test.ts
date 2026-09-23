@@ -28,7 +28,19 @@ describe("process configuration", () => {
       API_HOST: "127.0.0.1",
       API_PORT: 3_001,
       API_DATABASE_POOL_MAX: 10,
+      S3_FORCE_PATH_STYLE: true,
     });
+  });
+
+  it("supports virtual-host style for managed S3-compatible providers", () => {
+    const result = parseWorkerConfig({
+      DATABASE_URL: "postgres://app:app@localhost:5432/app",
+      REDIS_URL: "redis://localhost:6379",
+      ...storageConfig,
+      S3_FORCE_PATH_STYLE: "false",
+    });
+
+    expect(result.S3_FORCE_PATH_STYLE).toBe(false);
   });
 
   it("fails before startup when a required server variable is absent", () => {
