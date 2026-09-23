@@ -13,19 +13,18 @@ export class HealthController {
 
   @Get("ready")
   async ready() {
-    try {
-      await this.dependencies.checkReadiness();
+    const checks = await this.dependencies.checkReadiness();
+    if (Object.values(checks).every((status) => status === "up")) {
       return {
-        checks: { postgres: "up" },
+        checks,
         service: "api",
         status: "ready",
       } as const;
-    } catch {
-      throw new ServiceUnavailableException({
-        checks: { postgres: "down" },
-        service: "api",
-        status: "not_ready",
-      });
     }
+    throw new ServiceUnavailableException({
+      checks,
+      service: "api",
+      status: "not_ready",
+    });
   }
 }

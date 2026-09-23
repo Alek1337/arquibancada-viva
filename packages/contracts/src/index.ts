@@ -20,4 +20,22 @@ export {
   paginationRequestSchema,
   type PaginationRequest,
 } from "./pagination.js";
+export {
+  matchJoinRequestSchema,
+  matchJoinResultSchema,
+  matchRealtimeEventSchema,
+  matchSnapshotSchema,
+  REALTIME_EVENT_CHANNEL,
+  REALTIME_EVENT_VERSION,
+  REALTIME_NAMESPACE,
+  REALTIME_SNAPSHOT_VERSION,
+  reconcileRealtimeEvent,
+  realtimeCursorFromSnapshot,
+  type MatchJoinRequest,
+  type MatchJoinResult,
+  type MatchRealtimeEvent,
+  type MatchSnapshot,
+  type RealtimeCursor,
+  type RealtimeEventDecision,
+} from "./realtime.js";
 export { isoUtcDateTimeSchema, type IsoUtcDateTime } from "./time.js";

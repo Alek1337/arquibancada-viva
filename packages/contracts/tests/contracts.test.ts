@@ -4,8 +4,13 @@ import {
   createEventEnvelopeSchema,
   createPaginatedResponseSchema,
   isoUtcDateTimeSchema,
+  matchJoinRequestSchema,
+  matchRealtimeEventSchema,
+  matchSnapshotSchema,
   paginationRequestSchema,
   problemDetailsSchema,
+  reconcileRealtimeEvent,
+  realtimeCursorFromSnapshot,
   technicalFixtureJobDataSchema,
   technicalFixtureJobId,
   uuidV7Schema,
@@ -94,5 +99,36 @@ describe("shared contract primitives", () => {
       false,
     );
     expect(technicalFixtureJobId(matchId)).toBe(`technical-fixture-${matchId}`);
+  });
+
+  it("validates realtime joins, snapshots and ordered events", () => {
+    const snapshot = matchSnapshotSchema.parse({
+      generatedAt: "2026-09-23T12:00:00Z",
+      latestSequence: 4,
+      matchId,
+      projection: {},
+      version: 1,
+    });
+    const event = matchRealtimeEventSchema.parse({
+      eventId,
+      eventType: "technical.score-updated",
+      matchId,
+      occurredAt: "2026-09-23T12:00:01Z",
+      payload: { points: 10 },
+      sequence: 5,
+      version: 1,
+    });
+
+    expect(matchJoinRequestSchema.safeParse({ lastSequence: 4, matchId }).success).toBe(true);
+    expect(matchJoinRequestSchema.safeParse({ lastSequence: -1, matchId }).success).toBe(false);
+    const applied = reconcileRealtimeEvent(realtimeCursorFromSnapshot(snapshot), event);
+    expect(applied.kind).toBe("apply");
+    if (applied.kind !== "apply") {
+      throw new Error("Evento contíguo deveria ser aplicável.");
+    }
+    expect(reconcileRealtimeEvent(applied.cursor, event).kind).toBe("duplicate");
+    expect(
+      reconcileRealtimeEvent(applied.cursor, { ...event, eventId: matchId, sequence: 7 }).kind,
+    ).toBe("gap");
   });
 });

@@ -7,30 +7,50 @@ import {
 } from "@arquibancada-viva/database";
 
 export interface ApiDependencies {
-  checkReadiness(): Promise<void>;
+  checkReadiness(): Promise<ApiReadiness>;
   close(): Promise<void>;
+}
+
+export interface ApiReadiness {
+  readonly postgres: "down" | "up";
+  readonly redis: "down" | "up";
 }
 
 export type ApiShutdownTask = () => Promise<void>;
 
 export interface ApiRuntimeDependencies extends ApiDependencies {
   readonly database: Database;
+  registerRedisReadiness(check: () => Promise<void>): void;
   registerShutdown(task: ApiShutdownTask): void;
 }
 
 export function isApiRuntimeDependencies(
   dependencies: ApiDependencies,
 ): dependencies is ApiRuntimeDependencies {
-  return "database" in dependencies && "registerShutdown" in dependencies;
+  return (
+    "database" in dependencies &&
+    "registerRedisReadiness" in dependencies &&
+    "registerShutdown" in dependencies
+  );
 }
 
 export function createApiDependencies(config: ApiConfig): ApiRuntimeDependencies {
   const databaseRuntime: DatabaseRuntime = createApiDatabase(config);
   const shutdownTasks: ApiShutdownTask[] = [];
+  let redisReadiness: (() => Promise<void>) | undefined;
   let closePromise: Promise<void> | undefined;
 
   return {
-    checkReadiness: () => checkDatabaseConnection(databaseRuntime.database),
+    async checkReadiness() {
+      const [postgres, redis] = await Promise.allSettled([
+        checkDatabaseConnection(databaseRuntime.database),
+        redisReadiness ? redisReadiness() : Promise.reject(new Error("Redis não registrado.")),
+      ]);
+      return {
+        postgres: postgres.status === "fulfilled" ? "up" : "down",
+        redis: redis.status === "fulfilled" ? "up" : "down",
+      };
+    },
     close() {
       closePromise ??= (async () => {
         const failures: unknown[] = [];
@@ -53,6 +73,12 @@ export function createApiDependencies(config: ApiConfig): ApiRuntimeDependencies
       return closePromise;
     },
     database: databaseRuntime.database,
+    registerRedisReadiness(check) {
+      if (redisReadiness) {
+        throw new Error("A readiness do Redis já foi registrada.");
+      }
+      redisReadiness = check;
+    },
     registerShutdown(task) {
       if (closePromise) {
         throw new Error("A API já iniciou o encerramento.");

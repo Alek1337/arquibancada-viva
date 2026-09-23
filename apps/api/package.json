@@ -22,12 +22,15 @@
   "dependencies": {
     "@arquibancada-viva/auth": "workspace:*",
     "@arquibancada-viva/config": "workspace:*",
+    "@arquibancada-viva/contracts": "workspace:*",
     "@arquibancada-viva/database": "workspace:*",
     "@fastify/cors": "11.3.0",
     "@nestjs/common": "11.2.3",
     "@nestjs/core": "11.2.3",
     "@nestjs/platform-fastify": "11.2.3",
+    "@socket.io/redis-adapter": "8.3.0",
     "fastify": "5.11.3",
+    "ioredis": "6.0.0",
     "reflect-metadata": "0.2.2",
     "rxjs": "7.8.2",
     "socket.io": "4.8.3"

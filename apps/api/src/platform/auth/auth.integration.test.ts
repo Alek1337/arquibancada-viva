@@ -1,10 +1,25 @@
 import { parseApiConfig, type ApiConfig } from "@arquibancada-viva/config/api";
 import {
+  type MatchJoinResult,
+  type MatchRealtimeEvent,
+  type MatchSnapshot,
+  matchRealtimeEventSchema,
+  REALTIME_EVENT_CHANNEL,
+  REALTIME_EVENT_VERSION,
+  reconcileRealtimeEvent,
+  realtimeCursorFromSnapshot,
+} from "@arquibancada-viva/contracts";
+import {
   applyMigrations,
+  createPublicId,
   createMigrationDatabase,
+  nextMatchSequence,
+  recordOutboxMessage,
   type DatabaseRuntime,
+  withTransaction,
 } from "@arquibancada-viva/database";
 import type { NestFastifyApplication } from "@nestjs/platform-fastify";
+import Redis from "ioredis";
 import { io, type Socket } from "socket.io-client";
 import { Writable } from "node:stream";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -116,6 +131,59 @@ function expectRejectedSocket(baseURL: string, cookie: string): Promise<void> {
       resolve();
     });
     socket.connect();
+  });
+}
+
+function connectMatchSocket(baseURL: string, cookie: string): Promise<Socket> {
+  return new Promise((resolve, reject) => {
+    const socket = io(`${baseURL}/matches`, {
+      autoConnect: false,
+      extraHeaders: { Cookie: cookie, Origin: trustedOrigin },
+      forceNew: true,
+      reconnection: false,
+      transports: ["websocket"],
+    });
+    const timeout = setTimeout(() => {
+      socket.close();
+      reject(new Error("Timeout no handshake realtime autenticado."));
+    }, 5_000);
+    socket.once("connect_error", (error) => {
+      clearTimeout(timeout);
+      socket.close();
+      reject(error);
+    });
+    socket.once("connect", () => {
+      clearTimeout(timeout);
+      resolve(socket);
+    });
+    socket.connect();
+  });
+}
+
+function onceEvent<T>(socket: Socket, eventName: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      socket.off(eventName, listener);
+      reject(new Error(`Timeout aguardando ${eventName}.`));
+    }, 5_000);
+    const listener = (payload: T) => {
+      clearTimeout(timeout);
+      resolve(payload);
+    };
+    socket.once(eventName, listener);
+  });
+}
+
+function joinMatch(
+  socket: Socket,
+  request: { readonly lastSequence?: number; readonly matchId: string },
+): Promise<MatchJoinResult> {
+  return new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => reject(new Error("Timeout no ack match:join.")), 5_000);
+    socket.emit("match:join", request, (result: MatchJoinResult) => {
+      clearTimeout(timeout);
+      resolve(result);
+    });
   });
 }
 
@@ -261,5 +329,97 @@ describe("shared auth foundation over Fastify and Socket.IO", () => {
     });
 
     expect(response.status).toBe(403);
+  });
+
+  it("reconciles live events, duplicates, reconnect replay and persisted gaps", async () => {
+    const email = `realtime-${testRun}@example.test`;
+    const signUp = await fetch(`${baseURL}/v1/auth/sign-up/email`, {
+      body: JSON.stringify({
+        email,
+        name: "Realtime fixture",
+        password: "Strong-password-42",
+      }),
+      headers: { "content-type": "application/json", origin: trustedOrigin },
+      method: "POST",
+    });
+    const cookie = cookieHeader(signUp).header;
+    expect(signUp.status).toBe(200);
+
+    const matchId = createPublicId();
+    async function recordEvent(label: string): Promise<MatchRealtimeEvent> {
+      const eventId = createPublicId();
+      const occurredAt = new Date();
+      const sequence = await withTransaction(migrationRuntime.database, async (transaction) => {
+        const nextSequence = await nextMatchSequence(transaction, matchId);
+        await recordOutboxMessage(transaction, {
+          aggregateId: matchId,
+          aggregateType: "match",
+          eventId,
+          eventType: "technical.score-updated",
+          eventVersion: 1,
+          occurredAt,
+          payload: { label },
+          sequence: nextSequence,
+        });
+        return Number(nextSequence);
+      });
+      return matchRealtimeEventSchema.parse({
+        eventId,
+        eventType: "technical.score-updated",
+        matchId,
+        occurredAt: occurredAt.toISOString(),
+        payload: { label },
+        sequence,
+        version: REALTIME_EVENT_VERSION,
+      });
+    }
+
+    await recordEvent("initial");
+    const socket = await connectMatchSocket(baseURL, cookie);
+    const snapshotPromise = onceEvent<MatchSnapshot>(socket, "match:snapshot.v1");
+    const initialJoin = await joinMatch(socket, { matchId });
+    const snapshot = await snapshotPromise;
+    expect(initialJoin).toMatchObject({ latestSequence: 1, ok: true, sync: "snapshot" });
+    expect(snapshot).toMatchObject({ latestSequence: 1, matchId, projection: {} });
+
+    const redis = new Redis(buildConfig().REDIS_URL, { maxRetriesPerRequest: 1 });
+    const liveEvent = await recordEvent("live");
+    const firstLivePromise = onceEvent<MatchRealtimeEvent>(socket, "match:event.v1");
+    await redis.publish(REALTIME_EVENT_CHANNEL, JSON.stringify(liveEvent));
+    const firstLive = await firstLivePromise;
+    expect(firstLive.sequence).toBe(2);
+
+    const duplicatePromise = onceEvent<MatchRealtimeEvent>(socket, "match:event.v1");
+    await redis.publish(REALTIME_EVENT_CHANNEL, JSON.stringify(liveEvent));
+    const duplicate = await duplicatePromise;
+    const applied = reconcileRealtimeEvent(realtimeCursorFromSnapshot(snapshot), firstLive);
+    expect(applied.kind).toBe("apply");
+    expect(reconcileRealtimeEvent(applied.cursor, duplicate)).toMatchObject({ kind: "duplicate" });
+
+    socket.close();
+    const disconnectedEvent = await recordEvent("while-disconnected");
+    await redis.publish(REALTIME_EVENT_CHANNEL, JSON.stringify(disconnectedEvent));
+
+    const replaySocket = await connectMatchSocket(baseURL, cookie);
+    const replayPromise = onceEvent<MatchRealtimeEvent>(replaySocket, "match:event.v1");
+    const replayJoin = await joinMatch(replaySocket, { lastSequence: 2, matchId });
+    expect(await replayPromise).toMatchObject({
+      sequence: 3,
+      payload: { label: "while-disconnected" },
+    });
+    expect(replayJoin).toMatchObject({ latestSequence: 3, ok: true, sync: "replay" });
+    replaySocket.close();
+
+    await withTransaction(migrationRuntime.database, async (transaction) => {
+      await nextMatchSequence(transaction, matchId);
+    });
+    await recordEvent("after-gap");
+    const gapSocket = await connectMatchSocket(baseURL, cookie);
+    const gapSnapshotPromise = onceEvent<MatchSnapshot>(gapSocket, "match:snapshot.v1");
+    const gapJoin = await joinMatch(gapSocket, { lastSequence: 3, matchId });
+    expect(await gapSnapshotPromise).toMatchObject({ latestSequence: 5, matchId });
+    expect(gapJoin).toMatchObject({ latestSequence: 5, ok: true, sync: "snapshot" });
+    gapSocket.close();
+    await redis.quit();
   });
 });

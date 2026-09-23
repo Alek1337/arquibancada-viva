@@ -47,7 +47,7 @@ export async function createApiApplication(
       if (!isApiRuntimeDependencies(dependencies)) {
         throw new Error("A autenticação requer dependências runtime da API.");
       }
-      registerAuthRuntime(application, config, dependencies);
+      await registerAuthRuntime(application, config, dependencies);
     }
 
     return application;
