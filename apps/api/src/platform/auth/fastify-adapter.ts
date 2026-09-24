@@ -5,6 +5,7 @@ import {
 } from "@arquibancada-viva/auth";
 import type { ApiConfig } from "@arquibancada-viva/config/api";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
+import { noopObservability, type Observability } from "@arquibancada-viva/observability";
 import { createProblemDetails, sendProblem } from "../security/problem-details.js";
 
 async function forwardAuthResponse(response: Response, reply: FastifyReply) {
@@ -25,6 +26,7 @@ export function mountAuthFastify(
   fastify: FastifyInstance,
   auth: AuthRuntime,
   config: ApiConfig,
+  observability: Observability = noopObservability,
 ): void {
   fastify.route({
     async handler(request: FastifyRequest, reply: FastifyReply) {
@@ -46,6 +48,12 @@ export function mountAuthFastify(
         );
         return await forwardAuthResponse(response, reply);
       } catch (error) {
+        observability.captureException("AUTH_HANDLER_FAILED", {
+          correlationId: request.id,
+          method: request.method,
+          route: "/v1/auth/*",
+          statusCode: 500,
+        });
         request.log.error(
           createAuthRequestLog({ error, method: request.method, url: request.url }),
         );

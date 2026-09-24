@@ -1,12 +1,19 @@
 import { parseWorkerConfig, type WorkerConfig } from "@arquibancada-viva/config/worker";
 import { pathToFileURL } from "node:url";
+import { createServerObservability } from "@arquibancada-viva/observability";
 import { createWorkerDependencies } from "./dependencies.js";
 import { createWorkerLogger } from "./logger.js";
 import { createWorkerRuntime, registerWorkerShutdown, type WorkerRuntime } from "./runtime.js";
 
 export async function startWorker(config: WorkerConfig): Promise<WorkerRuntime> {
+  const observability = await createServerObservability(config, "worker");
   const logger = createWorkerLogger(config.LOG_LEVEL);
-  const runtime = createWorkerRuntime(config, createWorkerDependencies(config, logger), logger);
+  const runtime = createWorkerRuntime(
+    config,
+    createWorkerDependencies(config, logger, observability),
+    logger,
+    observability,
+  );
 
   try {
     await runtime.listen();

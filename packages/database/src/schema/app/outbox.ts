@@ -24,6 +24,7 @@ export const outboxMessages = appSchema.table(
   "outbox_messages",
   {
     eventId: uuid("event_id").primaryKey(),
+    correlationId: uuid("correlation_id"),
     aggregateType: text("aggregate_type").notNull(),
     aggregateId: uuid("aggregate_id").notNull(),
     sequence: bigint("sequence", { mode: "bigint" }).notNull(),

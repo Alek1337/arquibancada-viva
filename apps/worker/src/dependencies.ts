@@ -6,6 +6,7 @@ import {
   type DatabaseRuntime,
 } from "@arquibancada-viva/database";
 import { createS3ObjectStorage } from "@arquibancada-viva/storage";
+import { noopObservability, type Observability } from "@arquibancada-viva/observability";
 import type { WorkerLogger } from "./logger.js";
 import { createOutboxRecovery, type OutboxRecovery } from "./outbox/recovery.js";
 import { createTechnicalQueue, type TechnicalQueueRuntime } from "./queue/technical-queue.js";
@@ -29,6 +30,7 @@ export interface WorkerDependencies {
 export function createWorkerDependencies(
   config: WorkerConfig,
   logger: WorkerLogger,
+  observability: Observability = noopObservability,
 ): WorkerDependencies {
   const databaseRuntime: DatabaseRuntime = createWorkerDatabase(config);
   const objectStorage = createS3ObjectStorage(config);
@@ -37,8 +39,12 @@ export function createWorkerDependencies(
     database: databaseRuntime.database,
     logger,
     redisUrl: config.REDIS_URL,
+    observability,
   });
-  const realtimePublisher: RealtimeRedisPublisher = createRealtimeRedisPublisher(config.REDIS_URL);
+  const realtimePublisher: RealtimeRedisPublisher = createRealtimeRedisPublisher(
+    config.REDIS_URL,
+    observability,
+  );
   const outboxRecovery: OutboxRecovery = createOutboxRecovery({
     dispatcher: createOutboxDispatcher(databaseRuntime.database, {
       publisher: realtimePublisher,
@@ -49,6 +55,9 @@ export function createWorkerDependencies(
 
   return {
     async checkReadiness() {
+      observability.recordPool("total", databaseRuntime.pool.totalCount);
+      observability.recordPool("idle", databaseRuntime.pool.idleCount);
+      observability.recordPool("waiting", databaseRuntime.pool.waitingCount);
       const [postgres, queueRedis, realtimeRedis, storage] = await Promise.allSettled([
         checkDatabaseConnection(databaseRuntime.database),
         queueRuntime.checkConnection(),

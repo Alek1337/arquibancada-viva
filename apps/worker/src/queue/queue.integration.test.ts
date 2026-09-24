@@ -46,6 +46,7 @@ interface FixtureCommandResponse extends JsonObject {
 }
 
 interface FixtureCommandInput {
+  readonly correlationId?: string;
   readonly database: Database;
   readonly eventId?: string;
   readonly failBeforeCommit?: boolean;
@@ -69,6 +70,7 @@ async function executeFixtureCommand(
       await recordOutboxMessage(transaction, {
         aggregateId: input.matchId,
         aggregateType: "technical-match",
+        correlationId: input.correlationId ?? eventId,
         eventId,
         eventType: "technical.command-accepted",
         eventVersion: 1,

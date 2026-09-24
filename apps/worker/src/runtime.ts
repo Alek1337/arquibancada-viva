@@ -2,6 +2,11 @@ import type { WorkerConfig } from "@arquibancada-viva/config/worker";
 import { createServer, type Server, type ServerResponse } from "node:http";
 import type { WorkerDependencies } from "./dependencies.js";
 import type { WorkerLogger } from "./logger.js";
+import {
+  noopObservability,
+  type Observability,
+  settleWithin,
+} from "@arquibancada-viva/observability";
 
 function sendJson(response: ServerResponse, statusCode: number, body: unknown): void {
   response.writeHead(statusCode, {
@@ -21,6 +26,7 @@ export function createWorkerRuntime(
   config: WorkerConfig,
   dependencies: WorkerDependencies,
   logger: WorkerLogger,
+  observability: Observability = noopObservability,
 ): WorkerRuntime {
   let closePromise: Promise<void> | undefined;
   let shuttingDown = false;
@@ -81,18 +87,23 @@ export function createWorkerRuntime(
       }
 
       shuttingDown = true;
-      closePromise = Promise.all([
-        new Promise<void>((resolve, reject) => {
-          if (!server.listening) {
-            resolve();
-            return;
-          }
-          server.close((error) => (error ? reject(error) : resolve()));
-        }),
-        dependencies.close(),
-      ]).then(() => {
-        logger({ event: "worker.stopped", level: "info" });
-      });
+      closePromise = settleWithin(
+        (async () => {
+          await Promise.all([
+            new Promise<void>((resolve, reject) => {
+              if (!server.listening) {
+                resolve();
+                return;
+              }
+              server.close((error) => (error ? reject(error) : resolve()));
+            }),
+            dependencies.close(),
+          ]);
+          await observability.shutdown();
+          logger({ event: "worker.stopped", level: "info" });
+        })(),
+        config.SHUTDOWN_TIMEOUT_MS,
+      );
       return closePromise;
     },
     async listen() {

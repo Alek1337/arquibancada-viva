@@ -8,6 +8,7 @@ import { applyQueueFixtureEffect, type Database } from "@arquibancada-viva/datab
 import { Queue, QueueEvents, UnrecoverableError, Worker, type Job, type JobsOptions } from "bullmq";
 import Redis from "ioredis";
 import type { WorkerLogger } from "../logger.js";
+import { noopObservability, type Observability } from "@arquibancada-viva/observability";
 import { QueueUnavailableError } from "./errors.js";
 import { createTechnicalFixtureProcessor, type TechnicalFixtureJobResult } from "./processor.js";
 
@@ -35,6 +36,7 @@ export interface TechnicalQueueOptions {
   readonly concurrency: number;
   readonly database: Database;
   readonly logger: WorkerLogger;
+  readonly observability?: Observability;
   readonly policy?: TechnicalQueuePolicy;
   readonly prefix?: string;
   readonly redisUrl: string;
@@ -156,7 +158,8 @@ export function createTechnicalQueue(options: TechnicalQueueOptions): TechnicalQ
     connection: eventsConnection,
     prefix,
   });
-  const processor = createTechnicalFixtureProcessor(
+  const observability = options.observability ?? noopObservability;
+  const fixtureProcessor = createTechnicalFixtureProcessor(
     {
       apply: (data) =>
         applyQueueFixtureEffect(options.database, {
@@ -169,6 +172,18 @@ export function createTechnicalQueue(options: TechnicalQueueOptions): TechnicalQ
     },
     policy.jobTimeoutMs,
   );
+  const processor: typeof fixtureProcessor = async (job, token, signal) => {
+    const parsed = technicalFixtureJobDataSchema.safeParse(job.data);
+    const context = {
+      attempt: job.attemptsMade + 1,
+      jobName: job.name,
+      ...(job.id ? { jobId: job.id } : {}),
+      ...(parsed.success ? { correlationId: parsed.data.correlationId } : {}),
+    };
+    return observability.withSpan("worker.job", context, () =>
+      fixtureProcessor(job, token, signal),
+    );
+  };
   const worker = new Worker<unknown, TechnicalFixtureJobResult, typeof TECHNICAL_FIXTURE_JOB_NAME>(
     TECHNICAL_QUEUE_NAME,
     processor,
@@ -206,6 +221,12 @@ export function createTechnicalQueue(options: TechnicalQueueOptions): TechnicalQ
     }
     exhaustedJobs.add(job.id);
     const parsed = technicalFixtureJobDataSchema.safeParse(job.data);
+    observability.recordJob("failed", {
+      attempt: job.attemptsMade,
+      ...(parsed.success ? { correlationId: parsed.data.correlationId } : {}),
+      jobName: job.name,
+      ...(job.id ? { jobId: job.id } : {}),
+    });
     options.logger({
       attempt: job.attemptsMade,
       ...(parsed.success ? { correlationId: parsed.data.correlationId } : {}),
@@ -214,6 +235,15 @@ export function createTechnicalQueue(options: TechnicalQueueOptions): TechnicalQ
       jobId: job.id,
       jobName: job.name,
       level: "error",
+    });
+  });
+  worker.on("completed", (job) => {
+    const parsed = technicalFixtureJobDataSchema.safeParse(job.data);
+    observability.recordJob("completed", {
+      attempt: job.attemptsMade,
+      ...(parsed.success ? { correlationId: parsed.data.correlationId } : {}),
+      jobName: job.name,
+      ...(job.id ? { jobId: job.id } : {}),
     });
   });
 

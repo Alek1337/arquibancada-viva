@@ -7,6 +7,7 @@ import { type DatabaseTransaction, withTransaction } from "./transactions.js";
 export interface OutboxMessageInput {
   readonly aggregateId: string;
   readonly aggregateType: string;
+  readonly correlationId?: string;
   readonly eventId: string;
   readonly eventType: string;
   readonly eventVersion: number;
@@ -47,6 +48,7 @@ interface ClaimedOutboxRow extends Record<string, unknown> {
   readonly aggregateId: string;
   readonly aggregateType: string;
   readonly attempts: number;
+  readonly correlationId: null | string;
   readonly eventId: string;
   readonly eventType: string;
   readonly eventVersion: number;
@@ -112,6 +114,7 @@ async function claimOutboxMessages(
       where message.event_id = candidates.event_id
       returning
         message.event_id as "eventId",
+        message.correlation_id as "correlationId",
         message.aggregate_type as "aggregateType",
         message.aggregate_id as "aggregateId",
         message.sequence,
@@ -122,8 +125,9 @@ async function claimOutboxMessages(
         message.attempts
     `);
 
-    return result.rows.map((row) => ({
+    return result.rows.map(({ correlationId, ...row }) => ({
       ...row,
+      ...(correlationId ? { correlationId } : {}),
       sequence: BigInt(row.sequence),
     }));
   });

@@ -1,5 +1,6 @@
 import { Catch, type ArgumentsHost, type ExceptionFilter, HttpException } from "@nestjs/common";
 import type { FastifyReply, FastifyRequest } from "fastify";
+import { noopObservability, type Observability } from "@arquibancada-viva/observability";
 import { createProblemDetails, sendProblem } from "./problem-details.js";
 
 function readinessResponse(exception: unknown): Record<string, unknown> | undefined {
@@ -20,6 +21,8 @@ function readinessResponse(exception: unknown): Record<string, unknown> | undefi
 
 @Catch()
 export class SafeHttpExceptionFilter implements ExceptionFilter {
+  constructor(private readonly observability: Observability = noopObservability) {}
+
   catch(exception: unknown, host: ArgumentsHost): void {
     const context = host.switchToHttp();
     const request = context.getRequest<FastifyRequest>();
@@ -28,6 +31,12 @@ export class SafeHttpExceptionFilter implements ExceptionFilter {
     const safeReadiness = readinessResponse(exception);
 
     if (status >= 500) {
+      this.observability.captureException("HTTP_REQUEST_FAILED", {
+        correlationId: request.id,
+        method: request.method,
+        route: request.url.split("?", 1)[0] ?? "/",
+        statusCode: status,
+      });
       request.log.error(
         { correlationId: request.id, error: exception, event: "http.request_failed" },
         "http.request_failed",

@@ -19,10 +19,12 @@
       "@arquibancada-viva/config": ["./packages/config/src/index.ts"],
       "@arquibancada-viva/config/api": ["./packages/config/src/api.ts"],
       "@arquibancada-viva/config/client": ["./packages/config/src/client.ts"],
+      "@arquibancada-viva/config/observability": ["./packages/config/src/observability.ts"],
       "@arquibancada-viva/config/worker": ["./packages/config/src/worker.ts"],
       "@arquibancada-viva/contracts": ["./packages/contracts/src/index.ts"],
       "@arquibancada-viva/database": ["./packages/database/src/index.ts"],
       "@arquibancada-viva/game-core": ["./packages/game-core/src/index.ts"],
+      "@arquibancada-viva/observability": ["./packages/observability/src/index.ts"],
       "@arquibancada-viva/storage": ["./packages/storage/src/index.ts"],
       "@arquibancada-viva/testing": ["./packages/testing/src/index.ts"],
       "@arquibancada-viva/ui": ["./packages/ui/src/index.ts"]

@@ -24,6 +24,7 @@
     "@arquibancada-viva/config": "workspace:*",
     "@arquibancada-viva/contracts": "workspace:*",
     "@arquibancada-viva/database": "workspace:*",
+    "@arquibancada-viva/observability": "workspace:*",
     "@arquibancada-viva/storage": "workspace:*",
     "@fastify/cors": "11.3.0",
     "@fastify/helmet": "13.0.0",

@@ -8,6 +8,7 @@ import {
   redisUrlSchema,
 } from "./shared";
 import { storageConfigShape } from "./storage";
+import { observabilityConfigShape } from "./observability";
 
 export const workerConfigSchema = z
   .object({
@@ -19,6 +20,7 @@ export const workerConfigSchema = z
     WORKER_CONCURRENCY: z.coerce.number().int().min(1).max(100).default(5),
     WORKER_PROBE_HOST: bindHostSchema.default("127.0.0.1"),
     WORKER_PROBE_PORT: z.coerce.number().int().min(1).max(65_535).default(3_002),
+    ...observabilityConfigShape,
     ...storageConfigShape,
   })
   .readonly();

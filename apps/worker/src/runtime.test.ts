@@ -104,4 +104,21 @@ describe("worker operational probes", () => {
     expect((await probe(currentRuntime, "/health")).statusCode).toBe(200);
     expect((await probe(currentRuntime, "/unknown")).statusCode).toBe(404);
   });
+
+  it("stops accepting probes before waiting for dependencies to drain", async () => {
+    let release: (() => void) | undefined;
+    const dependenciesClosed = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const currentRuntime = await start({
+      checkReadiness: async () => ({ postgres: "up", redis: "up", storage: "up" }),
+      close: () => dependenciesClosed,
+      start: async () => undefined,
+    });
+
+    const closing = currentRuntime.close();
+    await vi.waitFor(() => expect(currentRuntime.server.listening).toBe(false));
+    release?.();
+    await expect(closing).resolves.toBeUndefined();
+  });
 });

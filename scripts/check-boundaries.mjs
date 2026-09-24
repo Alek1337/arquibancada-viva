@@ -7,7 +7,7 @@ import { createScanner, SyntaxKind } from "typescript/unstable/ast";
 
 const INTERNAL_SCOPE = "@arquibancada-viva/";
 const SOURCE_EXTENSIONS = new Set([".cjs", ".cts", ".js", ".jsx", ".mjs", ".mts", ".ts", ".tsx"]);
-const IGNORED_DIRECTORIES = new Set([".next", "coverage", "dist", "node_modules"]);
+const IGNORED_DIRECTORIES = new Set([".next", ".pnpm-store", "coverage", "dist", "node_modules"]);
 
 const PACKAGE_UNITS = [
   "packages/auth",
@@ -15,6 +15,7 @@ const PACKAGE_UNITS = [
   "packages/contracts",
   "packages/database",
   "packages/game-core",
+  "packages/observability",
   "packages/storage",
   "packages/testing",
   "packages/ui",
@@ -30,6 +31,7 @@ const POLICIES = new Map([
       "packages/contracts",
       "packages/database",
       "packages/game-core",
+      "packages/observability",
       "packages/storage",
     ]),
   ],
@@ -41,6 +43,7 @@ const POLICIES = new Map([
       "packages/contracts",
       "packages/database",
       "packages/game-core",
+      "packages/observability",
       "packages/storage",
     ]),
   ],
@@ -49,6 +52,7 @@ const POLICIES = new Map([
   ["packages/contracts", new Set()],
   ["packages/database", new Set(["packages/config"])],
   ["packages/game-core", new Set()],
+  ["packages/observability", new Set()],
   ["packages/storage", new Set(["packages/config"])],
   ["packages/testing", new Set(PACKAGE_UNITS.filter((unit) => unit !== "packages/testing"))],
   ["packages/ui", new Set(["packages/contracts"])],

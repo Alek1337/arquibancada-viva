@@ -29,10 +29,12 @@ describe("process configuration", () => {
       API_PORT: 3_001,
       API_DATABASE_POOL_MAX: 10,
       API_BODY_LIMIT_BYTES: 65_536,
+      OBSERVABILITY_EXPORT_TIMEOUT_MS: 2_000,
       RATE_LIMIT_AUTH_MAX: 10,
       RATE_LIMIT_GENERAL_MAX: 120,
       RATE_LIMIT_MUTATION_MAX: 30,
       RATE_LIMIT_WINDOW_MS: 60_000,
+      SHUTDOWN_TIMEOUT_MS: 10_000,
       S3_FORCE_PATH_STYLE: true,
     });
   });
@@ -70,6 +72,19 @@ describe("process configuration", () => {
         AUTH_SECRET: "development-auth-secret-change-me-now",
         API_BODY_LIMIT_BYTES: "1048577",
         RATE_LIMIT_AUTH_MAX: "0",
+        ...storageConfig,
+      }),
+    ).toThrow();
+  });
+
+  it("rejects unsafe observability endpoints and lifecycle bounds", () => {
+    expect(() =>
+      parseWorkerConfig({
+        DATABASE_URL: "postgresql://app:app@localhost:5432/app",
+        OBSERVABILITY_EXPORT_TIMEOUT_MS: "99",
+        OTEL_EXPORTER_OTLP_ENDPOINT: "file:///tmp/collector",
+        REDIS_URL: "redis://localhost:6379",
+        SHUTDOWN_TIMEOUT_MS: "999",
         ...storageConfig,
       }),
     ).toThrow();

@@ -19,6 +19,10 @@ O gate de fronteiras rejeita qualquer tentativa da web de importar `config/api` 
 |---|---|---:|---|
 | `NODE_ENV` | API/worker | não | `development`, `test` ou `production`; padrão `development` |
 | `LOG_LEVEL` | API/worker | não | nível estruturado; padrão `info` |
+| `OBSERVABILITY_EXPORT_TIMEOUT_MS` | API/worker | não | timeout de exportação entre 100 ms e 30 s; padrão 2000 |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | API/worker | não | URL-base HTTP(S) do collector OTLP; ausente mantém adapter no-op |
+| `SENTRY_DSN` | API/worker | não | DSN HTTP(S) do projeto; ausente desabilita captura externa |
+| `SHUTDOWN_TIMEOUT_MS` | API/worker | não | limite de drenagem entre 1 s e 60 s; padrão 10000 |
 | `NEXT_PUBLIC_API_URL` | web | sim | URL HTTP(S) pública da API |
 | `NEXT_PUBLIC_SOCKET_URL` | web | sim | URL HTTP(S) pública do Socket.IO |
 | `API_HOST` | API | não | interface de bind; `127.0.0.1` local ou `0.0.0.0` no contêiner |

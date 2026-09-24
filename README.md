@@ -51,3 +51,5 @@ O protocolo Socket.IO de snapshot, replay, deduplicação e degradação sem Red
 O contrato privado S3-compatible, seus estágios e URLs assinadas estão em `docs/object-storage.md`.
 
 A política HTTP, rate limiting, redaction de logs e matriz de exposição estão em `docs/security.md`.
+
+Os traces, métricas, correlação, captura sanitizada de exceções e limites de shutdown estão em `docs/observability.md`.

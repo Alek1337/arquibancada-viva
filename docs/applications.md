@@ -28,7 +28,9 @@ Também é possível iniciar um processo isolado com `pnpm dev:web`, `pnpm dev:a
 
 Liveness indica que o processo está vivo. Readiness retorna HTTP 503 quando uma dependência obrigatória não responde; isso permite retirar o processo de tráfego sem confundir a falha com crash. O worker faz bind somente em loopback no desenvolvimento e não oferece rotas de produto.
 
-API e worker validam toda a configuração antes de abrir portas. Ambos fecham pools, clientes S3 e listeners no encerramento gracioso. Em Windows, `SIGINT` é o caminho local confiável; contêineres Linux usam `SIGTERM`.
+API e worker validam toda a configuração antes de abrir portas. Ambos deixam de aceitar trabalho novo e fecham pools, clientes S3, listeners e exportadores de telemetria no encerramento gracioso, limitado por `SHUTDOWN_TIMEOUT_MS`. Em Windows, `SIGINT` é o caminho local confiável; contêineres Linux usam `SIGTERM`.
+
+Os dois processos também propagam o identificador de correlação entre HTTP, outbox, jobs e sockets. A configuração dos exportadores e o catálogo de métricas estão em [Observabilidade](./observability.md).
 
 ## Builds e contêineres
 

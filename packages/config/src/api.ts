@@ -11,6 +11,7 @@ import {
   serverSecretSchema,
 } from "./shared";
 import { storageConfigShape } from "./storage";
+import { observabilityConfigShape } from "./observability";
 
 export const apiConfigSchema = z
   .object({
@@ -28,6 +29,7 @@ export const apiConfigSchema = z
     RATE_LIMIT_GENERAL_MAX: z.coerce.number().int().min(1).max(100_000).default(120),
     RATE_LIMIT_MUTATION_MAX: z.coerce.number().int().min(1).max(10_000).default(30),
     RATE_LIMIT_WINDOW_MS: z.coerce.number().int().min(1_000).max(3_600_000).default(60_000),
+    ...observabilityConfigShape,
     AUTH_SECRET: serverSecretSchema,
     ...storageConfigShape,
   })

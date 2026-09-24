@@ -23,6 +23,7 @@
     "@arquibancada-viva/config": "workspace:*",
     "@arquibancada-viva/contracts": "workspace:*",
     "@arquibancada-viva/database": "workspace:*",
+    "@arquibancada-viva/observability": "workspace:*",
     "@arquibancada-viva/storage": "workspace:*",
     "bullmq": "6.3.4",
     "ioredis": "6.0.0"

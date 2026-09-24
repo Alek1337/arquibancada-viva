@@ -1,0 +1,1 @@
+ALTER TABLE "app"."outbox_messages" ADD COLUMN "correlation_id" uuid;

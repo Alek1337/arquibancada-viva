@@ -354,6 +354,7 @@ describe("shared auth foundation over Fastify and Socket.IO", () => {
         await recordOutboxMessage(transaction, {
           aggregateId: matchId,
           aggregateType: "match",
+          correlationId: eventId,
           eventId,
           eventType: "technical.score-updated",
           eventVersion: 1,

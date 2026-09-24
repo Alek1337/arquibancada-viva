@@ -5,6 +5,7 @@ import {
 } from "@arquibancada-viva/contracts";
 import type { OutboxPublisher } from "@arquibancada-viva/database";
 import Redis from "ioredis";
+import { noopObservability, type Observability } from "@arquibancada-viva/observability";
 
 export interface RealtimeRedisPublisher extends OutboxPublisher {
   checkConnection(): Promise<void>;
@@ -12,7 +13,10 @@ export interface RealtimeRedisPublisher extends OutboxPublisher {
   start(): Promise<void>;
 }
 
-export function createRealtimeRedisPublisher(redisUrl: string): RealtimeRedisPublisher {
+export function createRealtimeRedisPublisher(
+  redisUrl: string,
+  observability: Observability = noopObservability,
+): RealtimeRedisPublisher {
   const client = new Redis(redisUrl, {
     connectTimeout: 1_000,
     connectionName: "worker-realtime-publisher",
@@ -54,10 +58,25 @@ export function createRealtimeRedisPublisher(redisUrl: string): RealtimeRedisPub
         sequence: Number(message.sequence),
         version: REALTIME_EVENT_VERSION,
       });
-      const subscribers = await client.publish(REALTIME_EVENT_CHANNEL, JSON.stringify(event));
+      const subscribers = await observability.withSpan(
+        "outbox.publish",
+        {
+          ...(message.correlationId ? { correlationId: message.correlationId } : {}),
+          eventId: message.eventId,
+          matchId: message.aggregateId,
+          sequence: Number(message.sequence),
+        },
+        () => client.publish(REALTIME_EVENT_CHANNEL, JSON.stringify(event)),
+      );
       if (subscribers < 1) {
         throw new Error("REALTIME_SUBSCRIBER_UNAVAILABLE");
       }
+      observability.recordOutboxDelay(Date.now() - message.occurredAt.getTime(), {
+        ...(message.correlationId ? { correlationId: message.correlationId } : {}),
+        eventId: message.eventId,
+        matchId: message.aggregateId,
+        sequence: Number(message.sequence),
+      });
     },
     start() {
       if (!startPromise) {

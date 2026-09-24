@@ -17,6 +17,10 @@
       "types": "./src/client.ts",
       "default": "./src/client.ts"
     },
+    "./observability": {
+      "types": "./src/observability.ts",
+      "default": "./src/observability.ts"
+    },
     "./worker": {
       "types": "./src/worker.ts",
       "default": "./src/worker.ts"

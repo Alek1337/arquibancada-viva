@@ -6,6 +6,11 @@ import {
   type DatabaseRuntime,
 } from "@arquibancada-viva/database";
 import { createS3ObjectStorage, type ObjectStorage } from "@arquibancada-viva/storage";
+import {
+  noopObservability,
+  type Observability,
+  settleWithin,
+} from "@arquibancada-viva/observability";
 
 export interface ApiDependencies {
   checkReadiness(): Promise<ApiReadiness>;
@@ -38,7 +43,10 @@ export function isApiRuntimeDependencies(
   );
 }
 
-export function createApiDependencies(config: ApiConfig): ApiRuntimeDependencies {
+export function createApiDependencies(
+  config: ApiConfig,
+  observability: Observability = noopObservability,
+): ApiRuntimeDependencies {
   const databaseRuntime: DatabaseRuntime = createApiDatabase(config);
   const objectStorage = createS3ObjectStorage(config);
   const shutdownTasks: ApiShutdownTask[] = [];
@@ -47,6 +55,9 @@ export function createApiDependencies(config: ApiConfig): ApiRuntimeDependencies
 
   return {
     async checkReadiness() {
+      observability.recordPool("total", databaseRuntime.pool.totalCount);
+      observability.recordPool("idle", databaseRuntime.pool.idleCount);
+      observability.recordPool("waiting", databaseRuntime.pool.waitingCount);
       const [postgres, redis, storage] = await Promise.allSettled([
         checkDatabaseConnection(databaseRuntime.database),
         redisReadinessChecks.length > 0
@@ -61,29 +72,32 @@ export function createApiDependencies(config: ApiConfig): ApiRuntimeDependencies
       };
     },
     close() {
-      closePromise ??= (async () => {
-        const failures: unknown[] = [];
-        for (const task of shutdownTasks.toReversed()) {
+      closePromise ??= settleWithin(
+        (async () => {
+          const failures: unknown[] = [];
+          for (const task of shutdownTasks.toReversed()) {
+            try {
+              await task();
+            } catch (error) {
+              failures.push(error);
+            }
+          }
           try {
-            await task();
+            await objectStorage.close();
           } catch (error) {
             failures.push(error);
           }
-        }
-        try {
-          await objectStorage.close();
-        } catch (error) {
-          failures.push(error);
-        }
-        try {
-          await databaseRuntime.close();
-        } catch (error) {
-          failures.push(error);
-        }
-        if (failures.length > 0) {
-          throw new AggregateError(failures, "Falha ao encerrar recursos da API.");
-        }
-      })();
+          try {
+            await databaseRuntime.close();
+          } catch (error) {
+            failures.push(error);
+          }
+          if (failures.length > 0) {
+            throw new AggregateError(failures, "Falha ao encerrar recursos da API.");
+          }
+        })(),
+        config.SHUTDOWN_TIMEOUT_MS,
+      );
       return closePromise;
     },
     database: databaseRuntime.database,

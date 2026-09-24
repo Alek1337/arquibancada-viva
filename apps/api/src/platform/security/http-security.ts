@@ -1,4 +1,9 @@
 import type { ApiConfig } from "@arquibancada-viva/config/api";
+import {
+  noopObservability,
+  type Observability,
+  type SpanHandle,
+} from "@arquibancada-viva/observability";
 import fastifyCors from "@fastify/cors";
 import fastifyHelmet from "@fastify/helmet";
 import type { FastifyError, FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
@@ -13,6 +18,7 @@ interface RatePolicy {
 
 interface HttpSecurityOptions {
   readonly installErrorHandler?: boolean;
+  readonly observability?: Observability;
 }
 
 function isMutation(method: string): boolean {
@@ -44,6 +50,11 @@ export function mountHttpSecurity(
   rateLimit?: RateLimitGuard,
   options: HttpSecurityOptions = {},
 ): void {
+  const observability = options.observability ?? noopObservability;
+  const requestSpans = new WeakMap<
+    FastifyRequest,
+    { readonly startedAt: number; readonly span: SpanHandle }
+  >();
   fastify.register(fastifyCors, {
     allowedHeaders: ["authorization", "content-type", "idempotency-key", "x-requested-with"],
     credentials: true,
@@ -68,6 +79,14 @@ export function mountHttpSecurity(
   });
 
   fastify.addHook("onRequest", async (request, reply) => {
+    requestSpans.set(request, {
+      span: observability.startSpan("http.request", {
+        correlationId: request.id,
+        method: request.method,
+        route: request.url.split("?", 1)[0] ?? "/",
+      }),
+      startedAt: performance.now(),
+    });
     reply.header("x-correlation-id", request.id);
     const origin = request.headers.origin;
     if (origin !== undefined && origin !== config.WEB_ORIGIN) {
@@ -106,8 +125,32 @@ export function mountHttpSecurity(
     }
   });
 
+  fastify.addHook("onResponse", async (request, reply) => {
+    const active = requestSpans.get(request);
+    if (!active) {
+      return;
+    }
+    observability.recordHttp(performance.now() - active.startedAt, {
+      correlationId: request.id,
+      method: request.method,
+      route: request.url.split("?", 1)[0] ?? "/",
+      statusCode: reply.statusCode,
+    });
+    if (reply.statusCode >= 500) {
+      active.span.fail("HTTP_SERVER_ERROR");
+    }
+    active.span.end();
+    requestSpans.delete(request);
+  });
+
   if (options.installErrorHandler !== false) {
     fastify.setErrorHandler((error: FastifyError, request: FastifyRequest, reply: FastifyReply) => {
+      observability.captureException("HTTP_REQUEST_FAILED", {
+        correlationId: request.id,
+        method: request.method,
+        route: request.url.split("?", 1)[0] ?? "/",
+        statusCode: error.statusCode ?? 500,
+      });
       request.log.error(
         { correlationId: request.id, error, event: "http.request_failed" },
         "http.request_failed",

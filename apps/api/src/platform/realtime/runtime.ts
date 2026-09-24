@@ -3,6 +3,7 @@ import type { ApiConfig } from "@arquibancada-viva/config/api";
 import type { Database } from "@arquibancada-viva/database";
 import type { Server as HttpServer } from "node:http";
 import { Server } from "socket.io";
+import { noopObservability, type Observability } from "@arquibancada-viva/observability";
 import { mountAuthSocket } from "../auth/socket-auth.js";
 import { createRealtimeRedisRuntime } from "./redis-runtime.js";
 import { mountRealtimeSocket } from "./socket.js";
@@ -24,6 +25,7 @@ export function createSocketRuntime(
   config: ApiConfig,
   database: Database,
   logger?: RuntimeLogger,
+  observability: Observability = noopObservability,
 ): SocketRuntime {
   const io = new Server(server, {
     allowRequest(request, callback) {
@@ -35,7 +37,7 @@ export function createSocketRuntime(
     serveClient: false,
   });
   mountAuthSocket(io, auth);
-  const matches = mountRealtimeSocket(io, auth, database);
+  const matches = mountRealtimeSocket(io, auth, database, observability);
   const redis = createRealtimeRedisRuntime(io, config.REDIS_URL, matches.emitLocal, logger);
   let closePromise: Promise<void> | undefined;
 

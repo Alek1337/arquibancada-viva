@@ -15,6 +15,7 @@ import {
   getRealtimeMatchState,
 } from "@arquibancada-viva/database";
 import type { Namespace, Server } from "socket.io";
+import { noopObservability, type Observability } from "@arquibancada-viva/observability";
 
 const MAX_REPLAY_EVENTS = 100;
 export const MATCH_EVENT_NAME = "match:event.v1";
@@ -49,6 +50,7 @@ export function mountRealtimeSocket(
   io: Server,
   auth: AuthRuntime,
   database: Database,
+  observability: Observability = noopObservability,
 ): RealtimeSocketRuntime {
   const namespace = io.of(REALTIME_NAMESPACE);
 
@@ -71,6 +73,17 @@ export function mountRealtimeSocket(
   });
 
   namespace.on("connection", (socket) => {
+    const identity = socket.data.authIdentity as { readonly userId?: string } | undefined;
+    observability.recordSocketConnection(1, {
+      socketId: socket.id,
+      ...(identity?.userId ? { userId: identity.userId } : {}),
+    });
+    socket.once("disconnect", () => {
+      observability.recordSocketConnection(-1, {
+        socketId: socket.id,
+        ...(identity?.userId ? { userId: identity.userId } : {}),
+      });
+    });
     socket.on("match:join", async (rawRequest: unknown, acknowledge?: JoinAcknowledgement) => {
       const parsed = matchJoinRequestSchema.safeParse(rawRequest);
       if (!parsed.success) {
@@ -80,6 +93,11 @@ export function mountRealtimeSocket(
 
       const { lastSequence, matchId } = parsed.data;
       const room = roomName(matchId);
+      const span = observability.startSpan("socket.match_join", {
+        matchId,
+        socketId: socket.id,
+        ...(identity?.userId ? { userId: identity.userId } : {}),
+      });
       try {
         const initialState = await getRealtimeMatchState(database, matchId);
         if (!initialState) {
@@ -153,9 +171,17 @@ export function mountRealtimeSocket(
           }),
         );
       } catch {
+        span.fail("REALTIME_SYNC_FAILED");
+        observability.captureException("REALTIME_SYNC_FAILED", {
+          matchId,
+          socketId: socket.id,
+          ...(identity?.userId ? { userId: identity.userId } : {}),
+        });
         await socket.leave(room);
         acknowledge?.(matchJoinResultSchema.parse({ code: "INTERNAL_ERROR", ok: false }));
         socket.emit("system:error.v1", { code: "REALTIME_SYNC_FAILED" });
+      } finally {
+        span.end();
       }
     });
   });
