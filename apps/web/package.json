@@ -17,6 +17,7 @@
     "start": "node --env-file-if-exists=../../.env ./node_modules/next/dist/bin/next start --hostname 127.0.0.1",
     "test": "vitest run --exclude tests/e2e/**",
     "test:e2e": "playwright test",
+    "test:e2e:foundation": "playwright test --config playwright.foundation.config.ts",
     "typecheck": "tsc --project tsconfig.json --noEmit"
   },
   "dependencies": {
@@ -30,6 +31,7 @@
   },
   "devDependencies": {
     "@playwright/test": "1.63.0",
+    "@arquibancada-viva/testing": "workspace:*",
     "@tailwindcss/postcss": "4.3.3",
     "@types/node": "24.13.4",
     "@types/react": "19.2.18",

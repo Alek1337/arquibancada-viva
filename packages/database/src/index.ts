@@ -49,6 +49,7 @@ export {
 } from "./queue-fixture-effects.js";
 export {
   getRealtimeEventsAfter,
+  getRealtimeMatchProjection,
   getRealtimeMatchState,
   type PersistedRealtimeEvent,
   type RealtimeMatchState,
@@ -59,3 +60,8 @@ export {
   type TransactionOptions,
   withTransaction,
 } from "./transactions.js";
+export {
+  executeTechnicalAction,
+  type ExecuteTechnicalActionInput,
+  type TechnicalActionCommandValue,
+} from "./technical-action.js";

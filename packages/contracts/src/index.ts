@@ -39,4 +39,12 @@ export {
   type RealtimeEventDecision,
 } from "./realtime";
 export { sessionIdentitySchema, type SessionIdentity } from "./session";
+export {
+  technicalActionRequestSchema,
+  technicalActionResponseSchema,
+  technicalActionSchema,
+  type TechnicalAction,
+  type TechnicalActionRequest,
+  type TechnicalActionResponse,
+} from "./technical";
 export { isoUtcDateTimeSchema, type IsoUtcDateTime } from "./time";

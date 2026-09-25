@@ -55,3 +55,5 @@ A política HTTP, rate limiting, redaction de logs e matriz de exposição estã
 Os traces, métricas, correlação, captura sanitizada de exceções e limites de shutdown estão em `docs/observability.md`.
 
 O shell conectado, a estratégia PWA, a reconciliação e a matriz de navegadores estão em `docs/web-client.md`.
+
+O harness de integração, E2E, recuperação e carga está em `docs/testing.md`.

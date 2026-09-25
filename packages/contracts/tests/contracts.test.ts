@@ -12,6 +12,8 @@ import {
   reconcileRealtimeEvent,
   realtimeCursorFromSnapshot,
   sessionIdentitySchema,
+  technicalActionRequestSchema,
+  technicalActionResponseSchema,
   technicalFixtureJobDataSchema,
   technicalFixtureJobId,
   uuidV7Schema,
@@ -78,6 +80,26 @@ describe("shared contract primitives", () => {
         userId: "2",
       }).success,
     ).toBe(false);
+  });
+
+  it("versions the technical load-harness command and response", () => {
+    expect(technicalActionRequestSchema.parse({ action: "battery", version: 1 })).toEqual({
+      action: "battery",
+      version: 1,
+    });
+    expect(
+      technicalActionResponseSchema.safeParse({
+        accepted: true,
+        committedAt: "2026-09-25T12:00:00.000Z",
+        eventId: "01890f47-3c2a-7b5d-9f23-123456789abc",
+        matchId: "01890f47-3c2a-7b5d-af23-123456789abc",
+        replayed: false,
+        sequence: 1,
+      }).success,
+    ).toBe(true);
+    expect(technicalActionRequestSchema.safeParse({ action: "battery", version: 2 }).success).toBe(
+      false,
+    );
   });
 
   it("requires versioned, ordered event envelopes", () => {

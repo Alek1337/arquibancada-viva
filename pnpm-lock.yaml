@@ -72,6 +72,9 @@ importers:
         specifier: 4.8.3
         version: 4.8.3(supports-color@8.1.1)
     devDependencies:
+      '@arquibancada-viva/testing':
+        specifier: workspace:*
+        version: link:../../packages/testing
       '@types/node':
         specifier: 24.13.4
         version: 24.13.4
@@ -109,6 +112,9 @@ importers:
         specifier: 4.8.3
         version: 4.8.3(supports-color@8.1.1)
     devDependencies:
+      '@arquibancada-viva/testing':
+        specifier: workspace:*
+        version: link:../../packages/testing
       '@playwright/test':
         specifier: 1.63.0
         version: 1.63.0
@@ -152,6 +158,9 @@ importers:
         specifier: 6.0.0
         version: 6.0.0(supports-color@8.1.1)
     devDependencies:
+      '@arquibancada-viva/testing':
+        specifier: workspace:*
+        version: link:../../packages/testing
       '@types/node':
         specifier: 24.13.4
         version: 24.13.4
@@ -272,6 +281,22 @@ importers:
       '@types/node':
         specifier: 24.13.4
         version: 24.13.4
+
+  packages/testing:
+    dependencies:
+      '@arquibancada-viva/database':
+        specifier: workspace:*
+        version: link:../database
+      pg:
+        specifier: 8.23.0
+        version: 8.23.0
+    devDependencies:
+      '@types/node':
+        specifier: 24.13.4
+        version: 24.13.4
+      '@types/pg':
+        specifier: 8.23.1
+        version: 8.23.1
 
   packages/ui:
     dependencies:

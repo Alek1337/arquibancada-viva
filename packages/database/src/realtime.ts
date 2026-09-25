@@ -1,4 +1,4 @@
-import { and, asc, eq, gt } from "drizzle-orm";
+import { and, asc, eq, gt, lte } from "drizzle-orm";
 import type { JsonObject } from "./idempotency.js";
 import type { Database } from "./pool.js";
 import { matchSequences, outboxMessages } from "./schema/index.js";
@@ -17,6 +17,33 @@ export interface PersistedRealtimeEvent {
   readonly occurredAt: Date;
   readonly payload: JsonObject;
   readonly sequence: number;
+}
+
+const MAX_FOUNDATION_PROJECTION_EVENTS = 5_000;
+
+export async function getRealtimeMatchProjection(
+  database: Database,
+  input: { readonly latestSequence: number; readonly matchId: string },
+): Promise<JsonObject> {
+  if (!Number.isSafeInteger(input.latestSequence) || input.latestSequence < 0) {
+    throw new RangeError("latestSequence deve ser um inteiro seguro não negativo.");
+  }
+  const rows = await database
+    .select({ payload: outboxMessages.payload })
+    .from(outboxMessages)
+    .where(
+      and(
+        eq(outboxMessages.aggregateType, "match"),
+        eq(outboxMessages.aggregateId, input.matchId),
+        lte(outboxMessages.sequence, BigInt(input.latestSequence)),
+      ),
+    )
+    .orderBy(asc(outboxMessages.sequence))
+    .limit(MAX_FOUNDATION_PROJECTION_EVENTS + 1);
+  if (rows.length > MAX_FOUNDATION_PROJECTION_EVENTS) {
+    throw new RangeError("A projeção técnica excedeu o limite da fundação.");
+  }
+  return Object.assign({}, ...rows.map((row) => row.payload as JsonObject)) as JsonObject;
 }
 
 function safeSequence(value: bigint): number {

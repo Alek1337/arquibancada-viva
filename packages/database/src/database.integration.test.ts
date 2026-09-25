@@ -114,7 +114,7 @@ describe("PostgreSQL foundation", () => {
     );
 
     expect(schemas.rows.map((row) => row.schema_name)).toEqual(["app", "auth", "drizzle"]);
-    expect(migrationCount.rows[0]?.count).toBe(4);
+    expect(migrationCount.rows[0]?.count).toBe(5);
 
     const authTables = await emptyRuntime.pool.query<{ table_name: string }>(`
       SELECT table_name
@@ -148,7 +148,7 @@ describe("PostgreSQL foundation", () => {
         )
     `);
 
-    expect(migrationCount.rows[0]?.count).toBe(4);
+    expect(migrationCount.rows[0]?.count).toBe(5);
     expect(tableCount.rows[0]?.count).toBe(4);
   });
 

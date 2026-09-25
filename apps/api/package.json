@@ -16,7 +16,7 @@
     "lint": "biome lint .",
     "start": "node --env-file-if-exists=../../.env dist/main.js",
     "test": "vitest run --exclude \"**/*.integration.test.ts\"",
-    "test:integration": "vitest run src/platform/auth/auth.integration.test.ts",
+    "test:integration": "vitest run src/platform/auth/auth.integration.test.ts src/platform/testing/technical-harness.integration.test.ts",
     "typecheck": "tsc --project tsconfig.json --noEmit"
   },
   "dependencies": {
@@ -39,6 +39,7 @@
     "socket.io": "4.8.3"
   },
   "devDependencies": {
+    "@arquibancada-viva/testing": "workspace:*",
     "@types/node": "24.13.4",
     "socket.io-client": "4.8.3",
     "tsup": "8.5.1",

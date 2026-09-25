@@ -36,7 +36,25 @@ describe("process configuration", () => {
       RATE_LIMIT_WINDOW_MS: 60_000,
       SHUTDOWN_TIMEOUT_MS: 10_000,
       S3_FORCE_PATH_STYLE: true,
+      TECHNICAL_HARNESS_ENABLED: false,
     });
+  });
+
+  it("allows the technical harness only outside production", () => {
+    const input = {
+      AUTH_BASE_URL: "http://localhost:3001",
+      AUTH_SECRET: "development-auth-secret-change-me-now",
+      DATABASE_URL: "postgresql://app:app@localhost:5432/app",
+      REDIS_URL: "redis://localhost:6379",
+      TECHNICAL_HARNESS_ENABLED: "true",
+      WEB_ORIGIN: "http://localhost:3000",
+      ...storageConfig,
+    } as const;
+
+    expect(parseApiConfig(input).TECHNICAL_HARNESS_ENABLED).toBe(true);
+    expect(() => parseApiConfig({ ...input, NODE_ENV: "production" })).toThrow(
+      /TECHNICAL_HARNESS_ENABLED/u,
+    );
   });
 
   it("supports virtual-host style for managed S3-compatible providers", () => {

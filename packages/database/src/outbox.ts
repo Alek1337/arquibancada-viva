@@ -52,7 +52,7 @@ interface ClaimedOutboxRow extends Record<string, unknown> {
   readonly eventId: string;
   readonly eventType: string;
   readonly eventVersion: number;
-  readonly occurredAt: Date;
+  readonly occurredAt: Date | string;
   readonly payload: JsonObject;
   readonly sequence: bigint | number | string;
 }
@@ -128,6 +128,7 @@ async function claimOutboxMessages(
     return result.rows.map(({ correlationId, ...row }) => ({
       ...row,
       ...(correlationId ? { correlationId } : {}),
+      occurredAt: row.occurredAt instanceof Date ? row.occurredAt : new Date(row.occurredAt),
       sequence: BigInt(row.sequence),
     }));
   });

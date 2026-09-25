@@ -13,6 +13,11 @@ import {
 import { storageConfigShape } from "./storage";
 import { observabilityConfigShape } from "./observability";
 
+const disabledByDefaultBooleanSchema = z
+  .enum(["false", "true"])
+  .default("false")
+  .transform((value) => value === "true");
+
 export const apiConfigSchema = z
   .object({
     NODE_ENV: nodeEnvironmentSchema,
@@ -29,9 +34,19 @@ export const apiConfigSchema = z
     RATE_LIMIT_GENERAL_MAX: z.coerce.number().int().min(1).max(100_000).default(120),
     RATE_LIMIT_MUTATION_MAX: z.coerce.number().int().min(1).max(10_000).default(30),
     RATE_LIMIT_WINDOW_MS: z.coerce.number().int().min(1_000).max(3_600_000).default(60_000),
+    TECHNICAL_HARNESS_ENABLED: disabledByDefaultBooleanSchema,
     ...observabilityConfigShape,
     AUTH_SECRET: serverSecretSchema,
     ...storageConfigShape,
+  })
+  .superRefine((config, context) => {
+    if (config.NODE_ENV === "production" && config.TECHNICAL_HARNESS_ENABLED) {
+      context.addIssue({
+        code: "custom",
+        message: "TECHNICAL_HARNESS_ENABLED não pode ser ativado em production.",
+        path: ["TECHNICAL_HARNESS_ENABLED"],
+      });
+    }
   })
   .readonly();
 

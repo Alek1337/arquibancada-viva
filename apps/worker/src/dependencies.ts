@@ -49,6 +49,7 @@ export function createWorkerDependencies(
     dispatcher: createOutboxDispatcher(databaseRuntime.database, {
       publisher: realtimePublisher,
     }),
+    intervalMs: 100,
     logger,
   });
   let closePromise: Promise<void> | undefined;

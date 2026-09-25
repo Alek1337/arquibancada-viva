@@ -95,6 +95,7 @@ function connectionCopy(state: MatchConnectionState): {
 export function ConnectedArena() {
   const [state, setState] = useState<MatchConnectionState>(initialMatchConnectionState);
   const [matchInput, setMatchInput] = useState("");
+  const [commandPending, setCommandPending] = useState(false);
   const [notice, setNotice] = useState<{ kind: "error" | "info"; text: string; title: string }>();
   const stateRef = useRef(state);
   const socketRef = useRef<Socket | undefined>(undefined);
@@ -267,16 +268,38 @@ export function ConnectedArena() {
     void connect(parsed.data);
   }
 
-  function explainTechnicalAction(label: string) {
-    setNotice({
-      kind: "info",
-      text: `${label} está pronta para integração, mas este shell não fabrica confirmação local. A aceitação virá da API autoritativa.`,
-      title: "Comando não enviado",
-    });
+  async function submitTechnicalAction(action: (typeof actions)[number]) {
+    const matchId = stateRef.current.matchId;
+    if (!matchId || !canSubmitCompetitiveCommand(stateRef.current) || commandPending) {
+      return;
+    }
+    setCommandPending(true);
+    setNotice(undefined);
+    try {
+      const urls = endpoints();
+      const response = await createRestClient(urls.api).submitTechnicalAction({
+        action: action.key,
+        idempotencyKey: crypto.randomUUID(),
+        matchId,
+      });
+      setNotice({
+        kind: "info",
+        text: `${action.label} foi confirmada pela API na sequência ${response.sequence}. O placar será atualizado pelo evento ao vivo.`,
+        title: response.replayed ? "Confirmação recuperada" : "Ação confirmada",
+      });
+    } catch {
+      setNotice({
+        kind: "error",
+        text: "A API não confirmou a ação. Nenhum ponto foi aplicado localmente.",
+        title: "Ação não confirmada",
+      });
+    } finally {
+      setCommandPending(false);
+    }
   }
 
   const presentation = connectionCopy(state);
-  const actionsEnabled = canSubmitCompetitiveCommand(state);
+  const actionsEnabled = canSubmitCompetitiveCommand(state) && !commandPending;
 
   return (
     <section className="arena" id="arena" aria-labelledby="arena-title" tabIndex={-1}>
@@ -336,7 +359,7 @@ export function ConnectedArena() {
             disabled={!actionsEnabled}
             label={action.label}
             symbol={action.symbol}
-            onClick={() => explainTechnicalAction(action.label)}
+            onClick={() => void submitTechnicalAction(action)}
           />
         ))}
       </fieldset>

@@ -32,10 +32,14 @@
     "test": "pnpm test:boundaries && pnpm -r --if-present test",
     "test:boundaries": "node --test scripts/check-boundaries.test.mjs",
     "test:integration": "pnpm -r --if-present test:integration",
+    "test:load": "k6 run load/technical-foundation.js",
+    "test:load:seed": "pnpm --dir apps/api exec tsx scripts/seed-load-harness.mjs",
     "start:api": "pnpm --filter @arquibancada-viva/api start",
     "start:web": "pnpm --filter @arquibancada-viva/web start",
     "start:worker": "pnpm --filter @arquibancada-viva/worker start",
     "test:e2e": "pnpm -r --if-present test:e2e",
+    "test:e2e:foundation": "pnpm --filter @arquibancada-viva/web test:e2e:foundation",
+    "test:foundation": "pnpm test:integration && pnpm test:e2e:foundation",
     "test:smoke": "node scripts/smoke-apps.mjs"
   },
   "devDependencies": {

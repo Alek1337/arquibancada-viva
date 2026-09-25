@@ -106,6 +106,12 @@ const WEB_FORBIDDEN_PACKAGES = [
   "redis",
 ];
 
+function isTestSource(relativeFile) {
+  return /(?:^|\/)(?:tests?|__tests__)(?:\/|$)|\.(?:integration\.)?test\.[cm]?[jt]sx?$/u.test(
+    relativeFile,
+  );
+}
+
 function toPosix(filePath) {
   return filePath.split(path.sep).join("/");
 }
@@ -265,7 +271,14 @@ async function readManifests(root, violations) {
         const targetUnit = ALIAS_TO_UNIT.get(dependency);
         if (!targetUnit) {
           violations.push(`${unit}/package.json: dependência interna desconhecida ${dependency}.`);
-        } else if (!POLICIES.get(unit)?.has(targetUnit)) {
+        } else if (
+          !POLICIES.get(unit)?.has(targetUnit) &&
+          !(
+            targetUnit === "packages/testing" &&
+            field === "devDependencies" &&
+            unit !== "packages/testing"
+          )
+        ) {
           violations.push(`${unit}/package.json: dependência inversa proibida para ${dependency}.`);
         }
         if (version !== "workspace:*") {
@@ -315,7 +328,7 @@ async function checkAliases(root, violations) {
   }
 }
 
-function checkInternalImport({ manifests, specifier, unit }) {
+function checkInternalImport({ manifests, relativeFile, specifier, unit }) {
   const [packageName, ...subpathParts] = specifier.slice(INTERNAL_SCOPE.length).split("/");
   const targetAlias = `${INTERNAL_SCOPE}${packageName}`;
   const targetUnit = ALIAS_TO_UNIT.get(targetAlias);
@@ -323,7 +336,11 @@ function checkInternalImport({ manifests, specifier, unit }) {
     return `alias interno desconhecido: ${specifier}`;
   }
 
-  if (targetUnit !== unit && !POLICIES.get(unit)?.has(targetUnit)) {
+  if (
+    targetUnit !== unit &&
+    !POLICIES.get(unit)?.has(targetUnit) &&
+    !(targetUnit === "packages/testing" && isTestSource(relativeFile))
+  ) {
     return `dependência inversa proibida: ${unit} -> ${targetUnit}`;
   }
 
@@ -374,7 +391,7 @@ async function checkSourceFile({ file, manifests, root, violations }) {
     let message;
 
     if (specifier.startsWith(INTERNAL_SCOPE)) {
-      message = checkInternalImport({ manifests, specifier, unit });
+      message = checkInternalImport({ manifests, relativeFile, specifier, unit });
     } else if (specifier.startsWith(".")) {
       const target = path.resolve(path.dirname(file), specifier);
       const unitRoot = path.join(root, unit);

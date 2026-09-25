@@ -5,6 +5,7 @@ import type { Observability } from "@arquibancada-viva/observability";
 import type { ApiRuntimeDependencies } from "../dependencies.js";
 import { createSocketRuntime } from "../realtime/runtime.js";
 import { mountAuthFastify } from "./fastify-adapter.js";
+import { mountTechnicalHarness } from "../testing/technical-harness.js";
 
 export async function registerAuthRuntime(
   application: NestFastifyApplication,
@@ -15,6 +16,9 @@ export async function registerAuthRuntime(
   const auth = createAuthRuntime(config, dependencies.database);
   const fastify = application.getHttpAdapter().getInstance();
   mountAuthFastify(fastify, auth, config, observability);
+  if (config.TECHNICAL_HARNESS_ENABLED) {
+    mountTechnicalHarness(fastify, auth, dependencies.database);
+  }
 
   const socket = createSocketRuntime(
     application.getHttpServer(),

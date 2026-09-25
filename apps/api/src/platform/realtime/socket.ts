@@ -12,6 +12,7 @@ import {
 import {
   type Database,
   getRealtimeEventsAfter,
+  getRealtimeMatchProjection,
   getRealtimeMatchState,
 } from "@arquibancada-viva/database";
 import type { Namespace, Server } from "socket.io";
@@ -158,7 +159,10 @@ export function mountRealtimeSocket(
             generatedAt: new Date().toISOString(),
             latestSequence: currentState.latestSequence,
             matchId,
-            projection: {},
+            projection: await getRealtimeMatchProjection(database, {
+              latestSequence: currentState.latestSequence,
+              matchId,
+            }),
             version: REALTIME_SNAPSHOT_VERSION,
           }),
         );
