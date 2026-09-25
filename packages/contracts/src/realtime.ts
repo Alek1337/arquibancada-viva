@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { uuidV7Schema } from "./identifiers.js";
-import { isoUtcDateTimeSchema } from "./time.js";
+import { uuidV7Schema } from "./identifiers";
+import { isoUtcDateTimeSchema } from "./time";
 
 export const REALTIME_EVENT_VERSION = 1 as const;
 export const REALTIME_SNAPSHOT_VERSION = 1 as const;

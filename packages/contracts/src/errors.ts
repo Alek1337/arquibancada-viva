@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { uuidV7Schema } from "./identifiers.js";
+import { uuidV7Schema } from "./identifiers";
 
 export const errorCodeSchema = z.enum([
   "VALIDATION_ERROR",

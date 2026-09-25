@@ -11,6 +11,7 @@ import {
   problemDetailsSchema,
   reconcileRealtimeEvent,
   realtimeCursorFromSnapshot,
+  sessionIdentitySchema,
   technicalFixtureJobDataSchema,
   technicalFixtureJobId,
   uuidV7Schema,
@@ -61,6 +62,20 @@ describe("shared contract primitives", () => {
         status: 200,
         code: "UNKNOWN_CODE",
         detail: "Inválido.",
+      }).success,
+    ).toBe(false);
+  });
+
+  it("accepts only the stable public session identity", () => {
+    expect(sessionIdentitySchema.parse({ sessionId: "session-1", userId: "user-1" })).toEqual({
+      sessionId: "session-1",
+      userId: "user-1",
+    });
+    expect(
+      sessionIdentitySchema.safeParse({
+        email: "private@example.test",
+        sessionId: "1",
+        userId: "2",
       }).success,
     ).toBe(false);
   });

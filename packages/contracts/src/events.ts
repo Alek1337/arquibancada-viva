@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { uuidV7Schema } from "./identifiers.js";
-import { isoUtcDateTimeSchema } from "./time.js";
+import { uuidV7Schema } from "./identifiers";
+import { isoUtcDateTimeSchema } from "./time";
 
 export const EVENT_ENVELOPE_VERSION = 1 as const;
 

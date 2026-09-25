@@ -15,18 +15,25 @@
     "format": "biome format --write .",
     "lint": "biome lint .",
     "start": "node --env-file-if-exists=../../.env ./node_modules/next/dist/bin/next start --hostname 127.0.0.1",
-    "test": "vitest run",
+    "test": "vitest run --exclude tests/e2e/**",
+    "test:e2e": "playwright test",
     "typecheck": "tsc --project tsconfig.json --noEmit"
   },
   "dependencies": {
     "@arquibancada-viva/config": "workspace:*",
+    "@arquibancada-viva/contracts": "workspace:*",
+    "@arquibancada-viva/ui": "workspace:*",
     "next": "16.3.4",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "socket.io-client": "4.8.3"
   },
   "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "@tailwindcss/postcss": "4.3.3",
     "@types/node": "24.13.4",
     "@types/react": "19.2.18",
-    "@types/react-dom": "19.2.7"
+    "@types/react-dom": "19.2.7",
+    "tailwindcss": "4.3.3"
   }
 }

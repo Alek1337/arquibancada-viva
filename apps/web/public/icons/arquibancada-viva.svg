@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+  <title id="title">Arquibancada Viva</title>
+  <rect width="512" height="512" rx="112" fill="#0c1119"/>
+  <path d="M90 354 256 72l166 282-70 86H160z" fill="#ef6b2e"/>
+  <path d="m256 151 92 170H164z" fill="#ffcf72"/>
+  <path d="M208 295h96l47 145H161z" fill="#0c1119"/>
+  <path d="M227 333h58l18 58h-94z" fill="#f5f0e5"/>
+</svg>

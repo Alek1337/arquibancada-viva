@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { uuidV7Schema } from "./identifiers.js";
+import { uuidV7Schema } from "./identifiers";
 
 export const TECHNICAL_FIXTURE_JOB_NAME = "technical.fixture" as const;
 export const TECHNICAL_FIXTURE_JOB_VERSION = 1 as const;

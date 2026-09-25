@@ -3,6 +3,7 @@
   "compilerOptions": {
     "incremental": true,
     "jsx": "preserve",
+    "lib": ["DOM", "DOM.Iterable", "ES2024"],
     "plugins": [{ "name": "next" }],
     "types": ["node"]
   },

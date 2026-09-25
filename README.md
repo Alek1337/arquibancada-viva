@@ -53,3 +53,5 @@ O contrato privado S3-compatible, seus estágios e URLs assinadas estão em `doc
 A política HTTP, rate limiting, redaction de logs e matriz de exposição estão em `docs/security.md`.
 
 Os traces, métricas, correlação, captura sanitizada de exceções e limites de shutdown estão em `docs/observability.md`.
+
+O shell conectado, a estratégia PWA, a reconciliação e a matriz de navegadores estão em `docs/web-client.md`.
