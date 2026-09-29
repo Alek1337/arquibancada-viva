@@ -19,7 +19,9 @@ $env:FOUNDATION_RESTART_REDIS = "1"
 pnpm --filter @arquibancada-viva/web test:e2e:foundation
 ```
 
-Para carga, mantenha API e worker iniciados com o harness habilitado, gere um UUIDv7 e passe-o explicitamente ao k6:
+O comando `pnpm test:load:local` automatiza a carga quando as portas 3001 e 3002 estão livres. Ele usa a infraestrutura local padrão e encerra os processos iniciados ao terminar.
+
+Para executar manualmente, mantenha API e worker iniciados em terminais separados com o harness habilitado, gere um UUIDv7 e passe-o explicitamente ao k6:
 
 ```powershell
 $env:TECHNICAL_HARNESS_ENABLED = "true"

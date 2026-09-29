@@ -16,6 +16,7 @@ export default defineConfig({
       : projects,
   reporter: process.env.CI ? "line" : "list",
   testDir: "./tests/e2e",
+  testMatch: "shell.spec.ts",
   workers: 1,
   use: {
     baseURL: "http://127.0.0.1:3000",

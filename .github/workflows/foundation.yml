@@ -1,0 +1,78 @@
+name: Technical foundation
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      run_load:
+        description: Run the local 20-session load scenario
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: foundation-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  foundation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      CI: 'true'
+      DATABASE_URL: postgresql://app:app@127.0.0.1:5432/arquibancada_viva
+      REDIS_URL: redis://127.0.0.1:6379
+      FOUNDATION_RESTART_REDIS: '1'
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@f3d73ada1fa6e5c0c19973ff70a3f5cabf225cc5 # v6.0.0
+        with:
+          version: 11.19.0
+          run_install: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: 24.14.1
+          cache: pnpm
+      - name: Immutable installation
+        run: pnpm install --frozen-lockfile
+      - name: Quality, unit tests, contracts and production builds
+        run: pnpm check
+      - name: Migration review and local infrastructure
+        run: |
+          pnpm db:check
+          pnpm infra:config
+          pnpm infra:up
+          pnpm db:migrate
+      - name: Integration and migration compatibility
+        run: pnpm test:integration
+      - name: Production health, readiness and shutdown
+        run: pnpm test:smoke
+      - name: Browser runtimes
+        run: pnpm --filter @arquibancada-viva/web exec playwright install --with-deps chromium firefox webkit
+      - name: Desktop and mobile browser smoke
+        run: pnpm test:e2e
+      - name: Authenticated journey and Redis recovery
+        run: pnpm test:e2e:foundation
+      - name: Load runtime
+        if: github.event_name == 'workflow_dispatch' && inputs.run_load
+        run: docker pull grafana/k6:2.2.0
+      - name: Optional 20-session load
+        if: github.event_name == 'workflow_dispatch' && inputs.run_load
+        env:
+          K6_DOCKER: '1'
+        run: pnpm test:load:local
+      - name: Container builds
+        run: |
+          docker build -f apps/web/Dockerfile -t arquibancada-viva-web:ci .
+          docker build -f apps/api/Dockerfile -t arquibancada-viva-api:ci .
+          docker build -f apps/worker/Dockerfile -t arquibancada-viva-worker:ci .
+      - name: Infrastructure shutdown (preserve volumes)
+        if: always()
+        run: pnpm infra:down

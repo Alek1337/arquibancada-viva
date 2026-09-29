@@ -10,6 +10,25 @@ A fundação técnica está na fase Execute. Os artefatos internos de planejamen
 
 - Node.js 24.14.1
 - pnpm 11.19.0
+- Docker Desktop com backend WSL 2 no Windows, ou Docker Engine com Compose v2 no Linux.
+
+## Primeiro checkout
+
+```powershell
+git clone https://github.com/Alek1337/arquibancada-viva.git
+cd arquibancada-viva
+corepack enable
+corepack prepare pnpm@11.19.0 --activate
+pnpm install --frozen-lockfile
+Copy-Item .env.example .env
+pnpm infra:up
+pnpm db:migrate
+pnpm dev
+```
+
+No Linux/macOS, use `cp .env.example .env` no lugar de `Copy-Item`. Abra a web em `http://127.0.0.1:3000`. Configure as URLs públicas, `AUTH_BASE_URL` e `WEB_ORIGIN` com o mesmo hostname usado no navegador; `localhost` e `127.0.0.1` são origens distintas. Verifique `http://127.0.0.1:3001/v1/ready` e `http://127.0.0.1:3002/ready`, ambos com HTTP 200. Cadastro e comandos atuais são fixtures da fundação; o fluxo de contas do produto será implementado em sua spec.
+
+O [guia operacional](docs/operations.md) reúne shutdown, diagnóstico, release, contêineres e requisitos de staging. O [pipeline](.github/workflows/foundation.yml) roda em pushes para `main`, pull requests e execução manual; a carga completa é opcional na execução manual.
 
 ## Comandos-raiz
 

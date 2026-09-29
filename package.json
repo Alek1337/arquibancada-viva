@@ -33,6 +33,7 @@
     "test:boundaries": "node --test scripts/check-boundaries.test.mjs",
     "test:integration": "pnpm -r --if-present test:integration",
     "test:load": "k6 run load/technical-foundation.js",
+    "test:load:local": "node scripts/run-load-harness.mjs",
     "test:load:seed": "pnpm --dir apps/api exec tsx scripts/seed-load-harness.mjs",
     "start:api": "pnpm --filter @arquibancada-viva/api start",
     "start:web": "pnpm --filter @arquibancada-viva/web start",
