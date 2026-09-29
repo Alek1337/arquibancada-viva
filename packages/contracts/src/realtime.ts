@@ -49,7 +49,7 @@ export const matchJoinResultSchema = z.discriminatedUnion("ok", [
     .readonly(),
   z
     .strictObject({
-      code: z.enum(["INTERNAL_ERROR", "INVALID_PAYLOAD", "MATCH_NOT_FOUND"]),
+      code: z.enum(["INTERNAL_ERROR", "INVALID_PAYLOAD", "MATCH_NOT_FOUND", "UNAUTHORIZED"]),
       ok: z.literal(false),
     })
     .readonly(),

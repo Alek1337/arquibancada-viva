@@ -1,4 +1,4 @@
-import type { AuthRuntime } from "@arquibancada-viva/auth";
+import type { AuthIdentity, AuthRuntime } from "@arquibancada-viva/auth";
 import {
   type MatchRealtimeEvent,
   matchJoinRequestSchema,
@@ -74,7 +74,7 @@ export function mountRealtimeSocket(
   });
 
   namespace.on("connection", (socket) => {
-    const identity = socket.data.authIdentity as { readonly userId?: string } | undefined;
+    const identity = socket.data.authIdentity as AuthIdentity;
     observability.recordSocketConnection(1, {
       socketId: socket.id,
       ...(identity?.userId ? { userId: identity.userId } : {}),
@@ -86,6 +86,27 @@ export function mountRealtimeSocket(
       });
     });
     socket.on("match:join", async (rawRequest: unknown, acknowledge?: JoinAcknowledgement) => {
+      // A successful handshake is not permanent permission for subsequent commands.
+      // Use the same persisted session resolver as REST, not cached socket identity.
+      try {
+        const currentIdentity = await auth.resolveIdentity(socket.handshake.headers);
+        if (
+          !currentIdentity ||
+          currentIdentity.userId !== identity.userId ||
+          currentIdentity.sessionId !== identity.sessionId
+        ) {
+          acknowledge?.(matchJoinResultSchema.parse({ code: "UNAUTHORIZED", ok: false }));
+          socket.disconnect(); // Removes this namespace socket from every joined room.
+          return;
+        }
+      } catch {
+        acknowledge?.(matchJoinResultSchema.parse({ code: "INTERNAL_ERROR", ok: false }));
+        socket.disconnect();
+        return;
+      }
+      if (!socket.connected) {
+        return;
+      }
       const parsed = matchJoinRequestSchema.safeParse(rawRequest);
       if (!parsed.success) {
         acknowledge?.(matchJoinResultSchema.parse({ code: "INVALID_PAYLOAD", ok: false }));

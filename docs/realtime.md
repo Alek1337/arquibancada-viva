@@ -5,6 +5,20 @@ resolvem a sessão persistida do Better Auth durante o handshake. No beta, a aut
 sala exige uma sessão válida e a existência técnica da partida; regras de produto mais restritas
 podem substituir essa decisão sem alterar o protocolo de recuperação.
 
+Cada `match:join` revalida a sessão persistida antes de consultar partida, entrar na sala ou
+emitir snapshot/replay. Sessão ausente, revogada, expirada ou substituída recebe acknowledgement
+`{ok:false, code:"UNAUTHORIZED"}` e a conexão da namespace é encerrada, removendo todas as salas.
+Falha na consulta de autenticação também encerra a conexão, com erro genérico `INTERNAL_ERROR`.
+O instante de autorização é a consulta de sessão no início de cada comando. Não há promessa
+de desconexão push imediata de todos os sockets no instante do logout: conexões ociosas são
+revalidadas no próximo comando ou handshake. Salas técnicas não devem ser tratadas como canal
+privado de produto; revogação de streams privados exigirá política própria antes de sua criação.
+
+`UNAUTHORIZED` é um novo motivo no acknowledgement v1, sem mudar o formato. Plano de rollout:
+contratos, API e web são publicados na mesma revisão. Clientes antigos que rejeitam esse enum
+desconhecido devem continuar fail-closed; a desconexão impede novos comandos e uma reconexão
+com a sessão inválida falha no handshake. Não há downgrade de autorização para compatibilidade.
+
 ## Protocolo da partida
 
 O cliente envia `match:join` com `matchId` e, em uma reconexão, `lastSequence`. A API entra na

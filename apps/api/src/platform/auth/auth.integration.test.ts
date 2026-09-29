@@ -106,9 +106,9 @@ function connectAuthenticatedSocket(
   });
 }
 
-function expectRejectedSocket(baseURL: string, cookie: string): Promise<void> {
+function expectRejectedSocket(baseURL: string, cookie: string, namespace = "/auth"): Promise<void> {
   return new Promise((resolve, reject) => {
-    const socket = io(`${baseURL}/auth`, {
+    const socket = io(`${baseURL}${namespace}`, {
       autoConnect: false,
       extraHeaders: { Cookie: cookie, Origin: trustedOrigin },
       forceNew: true,
@@ -330,6 +330,73 @@ describe("shared auth foundation over Fastify and Socket.IO", () => {
 
     expect(response.status).toBe(403);
   });
+
+  it.each(["revoked", "expired"] as const)(
+    "rejects new joins on an existing socket when its session is %s",
+    async (mode) => {
+      const signUp = await fetch(`${baseURL}/v1/auth/sign-up/email`, {
+        body: JSON.stringify({
+          email: `socket-${mode}-${testRun}@example.test`,
+          name: "Socket lifecycle fixture",
+          password: "Strong-password-42",
+        }),
+        headers: { "content-type": "application/json", origin: trustedOrigin },
+        method: "POST",
+      });
+      expect(signUp.status).toBe(200);
+      const cookie = cookieHeader(signUp).header;
+      const sessionResponse = await fetch(`${baseURL}/v1/me/session`, {
+        headers: { cookie, origin: trustedOrigin },
+      });
+      expect(sessionResponse.status).toBe(200);
+      const session = (await sessionResponse.json()) as { sessionId: string };
+      const oldMatchId = createPublicId();
+      const newMatchId = createPublicId();
+      await withTransaction(migrationRuntime.database, async (transaction) => {
+        await nextMatchSequence(transaction, oldMatchId);
+        await nextMatchSequence(transaction, newMatchId);
+      });
+      const socket = await connectMatchSocket(baseURL, cookie);
+      try {
+        expect(await joinMatch(socket, { matchId: oldMatchId })).toMatchObject({ ok: true });
+        if (mode === "revoked") {
+          const signOut = await fetch(`${baseURL}/v1/auth/sign-out`, {
+            body: "{}",
+            headers: { "content-type": "application/json", cookie, origin: trustedOrigin },
+            method: "POST",
+          });
+          expect(signOut.status).toBe(200);
+        } else {
+          // Expire the real persisted session without sleeping or changing the system clock.
+          await migrationRuntime.pool.query(
+            "UPDATE auth.session SET expires_at = $1 WHERE id = $2",
+            [new Date(0), session.sessionId],
+          );
+        }
+        expect(
+          (
+            await fetch(`${baseURL}/v1/me/session`, {
+              headers: { cookie, origin: trustedOrigin },
+            })
+          ).status,
+        ).toBe(401);
+        const received: unknown[] = [];
+        socket.on("match:snapshot.v1", (payload) => received.push(payload));
+        socket.on("match:event.v1", (payload) => received.push(payload));
+        const disconnected = onceEvent<string>(socket, "disconnect");
+        expect(await joinMatch(socket, { matchId: newMatchId })).toEqual({
+          code: "UNAUTHORIZED",
+          ok: false,
+        });
+        await disconnected;
+        expect(socket.connected).toBe(false);
+        expect(received).toEqual([]);
+        await expectRejectedSocket(baseURL, cookie, "/matches");
+      } finally {
+        socket.close();
+      }
+    },
+  );
 
   it("reconciles live events, duplicates, reconnect replay and persisted gaps", async () => {
     const email = `realtime-${testRun}@example.test`;

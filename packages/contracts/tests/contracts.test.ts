@@ -5,6 +5,7 @@ import {
   createPaginatedResponseSchema,
   isoUtcDateTimeSchema,
   matchJoinRequestSchema,
+  matchJoinResultSchema,
   matchRealtimeEventSchema,
   matchSnapshotSchema,
   paginationRequestSchema,
@@ -158,6 +159,10 @@ describe("shared contract primitives", () => {
 
     expect(matchJoinRequestSchema.safeParse({ lastSequence: 4, matchId }).success).toBe(true);
     expect(matchJoinRequestSchema.safeParse({ lastSequence: -1, matchId }).success).toBe(false);
+    expect(matchJoinResultSchema.parse({ code: "UNAUTHORIZED", ok: false })).toEqual({
+      code: "UNAUTHORIZED",
+      ok: false,
+    });
     const applied = reconcileRealtimeEvent(realtimeCursorFromSnapshot(snapshot), event);
     expect(applied.kind).toBe("apply");
     if (applied.kind !== "apply") {
