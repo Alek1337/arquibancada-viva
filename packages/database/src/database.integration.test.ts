@@ -1,8 +1,11 @@
 import { eq, sql } from "drizzle-orm";
 import { Pool } from "pg";
+import { cp, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createPublicId } from "./identifiers.js";
-import { applyMigrations } from "./migrations.js";
+import { applyMigrations, MIGRATIONS_DIRECTORY } from "./migrations.js";
 import { createDatabaseRuntime, createMigrationDatabase, type DatabaseRuntime } from "./pool.js";
 import { matchSequences, outboxMessages } from "./schema/index.js";
 import { type DatabaseTransaction, nextMatchSequence, withTransaction } from "./transactions.js";
@@ -67,17 +70,6 @@ describe("PostgreSQL foundation", () => {
     emptyRuntime = createMigrationDatabase(databaseUrl(emptyDatabaseName));
     applicationRuntime = createDatabaseRuntime("api", databaseUrl(emptyDatabaseName), 10);
     previousRuntime = createMigrationDatabase(databaseUrl(previousDatabaseName));
-
-    await previousRuntime.pool.query(`
-      CREATE TABLE public.supported_previous_state (
-        id integer PRIMARY KEY,
-        value text NOT NULL
-      )
-    `);
-    await previousRuntime.pool.query(
-      "INSERT INTO public.supported_previous_state (id, value) VALUES ($1, $2)",
-      [1, "preserved"],
-    );
   });
 
   afterAll(async () => {
@@ -152,15 +144,92 @@ describe("PostgreSQL foundation", () => {
     expect(tableCount.rows[0]?.count).toBe(4);
   });
 
-  it("migrates the supported previous state without changing its data", async () => {
-    await applyMigrations(previousRuntime.database);
+  it("upgrades the penultimate migration with persisted outbox data and applies only the new migration", async () => {
+    const previousMigrations = await mkdtemp(join(tmpdir(), "av-migrations-"));
+    const journal = JSON.parse(
+      await readFile(join(MIGRATIONS_DIRECTORY, "meta", "_journal.json"), "utf8"),
+    ) as { entries: { tag: string }[] };
+    expect(journal.entries.length).toBeGreaterThan(1);
+    try {
+      await cp(MIGRATIONS_DIRECTORY, previousMigrations, { recursive: true });
+      await writeFile(
+        join(previousMigrations, "meta", "_journal.json"),
+        JSON.stringify({ ...journal, entries: journal.entries.slice(0, -1) }),
+      );
+      await applyMigrations(previousRuntime.database, previousMigrations);
+    } finally {
+      // This directory is allocated exclusively by mkdtemp for this test.
+      await rm(previousMigrations, { force: true, recursive: true });
+    }
 
-    const previousState = await previousRuntime.pool.query<{ value: string }>(
-      "SELECT value FROM public.supported_previous_state WHERE id = $1",
-      [1],
+    const before = await previousRuntime.pool.query<{ id: number; hash: string }>(
+      "SELECT id, hash FROM drizzle.__drizzle_migrations ORDER BY id",
+    );
+    expect(before.rows).toHaveLength(journal.entries.length - 1);
+    const columnBefore = await previousRuntime.pool.query(`
+      SELECT column_name FROM information_schema.columns
+      WHERE table_schema = 'app' AND table_name = 'outbox_messages'
+        AND column_name = 'correlation_id'
+    `);
+    expect(columnBefore.rows).toEqual([]);
+
+    const matchId = createPublicId();
+    const eventId = createPublicId();
+    const occurredAt = new Date("2026-09-14T00:00:00.000Z");
+    await previousRuntime.pool.query(
+      `INSERT INTO app.match_sequences (match_id, last_sequence) VALUES ($1, 1)`,
+      [matchId],
+    );
+    await previousRuntime.pool.query(
+      `INSERT INTO app.outbox_messages
+        (event_id, aggregate_type, aggregate_id, sequence, event_type, payload, occurred_at)
+       VALUES ($1, 'match', $2, 1, 'fixture.recorded', $3, $4)`,
+      [eventId, matchId, JSON.stringify({ marker: "preserved" }), occurredAt],
     );
 
-    expect(previousState.rows).toEqual([{ value: "preserved" }]);
+    await applyMigrations(previousRuntime.database);
+    const after = await previousRuntime.pool.query<{ id: number; hash: string }>(
+      "SELECT id, hash FROM drizzle.__drizzle_migrations ORDER BY id",
+    );
+    expect(after.rows).toHaveLength(journal.entries.length);
+    expect(after.rows.slice(0, -1)).toEqual(before.rows);
+    const [event] = await previousRuntime.database
+      .select()
+      .from(outboxMessages)
+      .where(eq(outboxMessages.eventId, eventId));
+    expect(event).toMatchObject({
+      aggregateId: matchId,
+      correlationId: null,
+      eventId,
+      occurredAt,
+      payload: { marker: "preserved" },
+      sequence: 1n,
+      status: "pending",
+    });
+    expect(
+      await withTransaction(previousRuntime.database, (transaction) =>
+        nextMatchSequence(transaction, matchId),
+      ),
+    ).toBe(2n);
+    const correlationId = createPublicId();
+    await previousRuntime.database
+      .update(outboxMessages)
+      .set({ correlationId })
+      .where(eq(outboxMessages.eventId, eventId));
+    expect(
+      (
+        await previousRuntime.database
+          .select()
+          .from(outboxMessages)
+          .where(eq(outboxMessages.eventId, eventId))
+      )[0]?.correlationId,
+    ).toBe(correlationId);
+
+    await applyMigrations(previousRuntime.database);
+    const reapplied = await previousRuntime.pool.query<{ id: number; hash: string }>(
+      "SELECT id, hash FROM drizzle.__drizzle_migrations ORDER BY id",
+    );
+    expect(reapplied.rows).toEqual(after.rows);
   });
 
   it("rolls sequence and outbox back together when a transaction fails", async () => {

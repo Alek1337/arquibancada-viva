@@ -4,6 +4,7 @@ import {
   type MatchRealtimeEvent,
   type MatchSnapshot,
   matchRealtimeEventSchema,
+  problemDetailsSchema,
   REALTIME_EVENT_CHANNEL,
   REALTIME_EVENT_VERSION,
   technicalActionResponseSchema,
@@ -12,6 +13,8 @@ import {
   createOutboxDispatcher,
   createPublicId,
   getOutboxMessage,
+  getRealtimeEventsAfter,
+  getRealtimeMatchState,
 } from "@arquibancada-viva/database";
 import {
   createEphemeralPostgresDatabase,
@@ -20,7 +23,8 @@ import {
 import type { NestFastifyApplication } from "@nestjs/platform-fastify";
 import Redis from "ioredis";
 import { io, type Socket } from "socket.io-client";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import request from "supertest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createApiApplication } from "../../app.js";
 
 const adminDatabaseUrl =
@@ -29,6 +33,7 @@ const adminDatabaseUrl =
   "postgresql://app:app@127.0.0.1:5432/arquibancada_viva";
 const redisUrl = process.env.TEST_REDIS_URL ?? process.env.REDIS_URL ?? "redis://127.0.0.1:6379";
 const trustedOrigin = "http://127.0.0.1:3000";
+const testSockets = new Set<Socket>();
 
 function config(databaseUrl: string): ApiConfig {
   return parseApiConfig({
@@ -80,6 +85,7 @@ function connectMatchSocket(baseURL: string, cookie: string): Promise<Socket> {
       reconnection: false,
       transports: ["websocket"],
     });
+    testSockets.add(socket);
     const timer = setTimeout(() => reject(new Error("SOCKET_CONNECT_TIMEOUT")), 5_000);
     socket.once("connect_error", reject);
     socket.once("connect", () => {
@@ -131,18 +137,14 @@ async function submitAction(input: {
   readonly idempotencyKey: string;
   readonly matchId: string;
 }) {
-  const response = await fetch(`${input.baseURL}/v1/technical/matches/${input.matchId}/actions`, {
-    body: JSON.stringify({ action: "battery", version: 1 }),
-    headers: {
-      "content-type": "application/json",
-      cookie: input.cookie,
-      "idempotency-key": input.idempotencyKey,
-      origin: trustedOrigin,
-    },
-    method: "POST",
-  });
-  expect(response.status).toBe(202);
-  return technicalActionResponseSchema.parse(await response.json());
+  const response = await request(input.baseURL)
+    .post(`/v1/technical/matches/${input.matchId}/actions`)
+    .set("Cookie", input.cookie)
+    .set("Idempotency-Key", input.idempotencyKey)
+    .set("Origin", trustedOrigin)
+    .send({ action: "battery", version: 1 })
+    .expect(202);
+  return technicalActionResponseSchema.parse(response.body);
 }
 
 describe("technical foundation integration harness", () => {
@@ -152,7 +154,7 @@ describe("technical foundation integration harness", () => {
   let cookie: string;
   let redis: Redis;
 
-  beforeAll(async () => {
+  beforeEach(async () => {
     database = await createEphemeralPostgresDatabase({
       adminDatabaseUrl,
       prefix: "av_tft016",
@@ -174,9 +176,70 @@ describe("technical foundation integration harness", () => {
     cookie = cookieHeader(signUp);
   }, 20_000);
 
-  afterAll(async () => {
+  afterEach(async () => {
+    for (const socket of testSockets) {
+      socket.close();
+    }
+    testSockets.clear();
     await Promise.allSettled([application?.close(), redis?.quit()]);
     await database?.close();
+  }, 20_000);
+
+  it("validates HTTP commands with Supertest and persists one effect for concurrent retries", async () => {
+    const matchId = createPublicId();
+    const path = `/v1/technical/matches/${matchId}/actions`;
+    const key = `supertest-${createPublicId()}`;
+    const unauthorized = await request(baseURL)
+      .post(path)
+      .set("Origin", trustedOrigin)
+      .set("Idempotency-Key", key)
+      .send({ action: "battery", version: 1 })
+      .expect(401);
+    expect(problemDetailsSchema.parse(unauthorized.body)).toMatchObject({
+      status: 401,
+      code: "UNAUTHENTICATED",
+    });
+    const invalid = await request(baseURL)
+      .post(path)
+      .set("Origin", trustedOrigin)
+      .set("Cookie", cookie)
+      .set("Idempotency-Key", key)
+      .send({ action: "invalid", version: 1 })
+      .expect(400);
+    expect(problemDetailsSchema.parse(invalid.body)).toMatchObject({
+      status: 400,
+      code: "VALIDATION_ERROR",
+    });
+    expect(await getRealtimeMatchState(database.database, matchId)).toBeUndefined();
+    expect(
+      await getRealtimeEventsAfter(database.database, { matchId, sequence: 0, limit: 10 }),
+    ).toEqual([]);
+
+    const results = await Promise.all(
+      Array.from({ length: 10 }, () =>
+        submitAction({ baseURL, cookie, idempotencyKey: key, matchId }),
+      ),
+    );
+    expect(new Set(results.map((result) => result.eventId)).size).toBe(1);
+    expect(results.filter((result) => !result.replayed)).toHaveLength(1);
+    expect(results.every((result) => result.sequence === 1)).toBe(true);
+    const conflict = await request(baseURL)
+      .post(path)
+      .set("Origin", trustedOrigin)
+      .set("Cookie", cookie)
+      .set("Idempotency-Key", key)
+      .send({ action: "flag", version: 1 })
+      .expect(409);
+    expect(problemDetailsSchema.parse(conflict.body)).toMatchObject({
+      status: 409,
+      code: "CONFLICT",
+    });
+    expect(await getRealtimeMatchState(database.database, matchId)).toMatchObject({
+      latestSequence: 1,
+    });
+    expect(
+      await getRealtimeEventsAfter(database.database, { matchId, sequence: 0, limit: 10 }),
+    ).toHaveLength(1);
   });
 
   it("keeps confirmed effects through API and publisher restarts", async () => {
