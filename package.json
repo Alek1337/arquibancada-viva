@@ -9,6 +9,7 @@
     "pnpm": "11.19.0"
   },
   "scripts": {
+    "audit:dependencies": "node scripts/audit-dependencies.mjs",
     "auth:schema": "pnpm --filter @arquibancada-viva/auth auth:schema",
     "dev": "pnpm -r --parallel --if-present dev",
     "dev:api": "pnpm --filter @arquibancada-viva/api dev",
@@ -30,7 +31,7 @@
     "lint:boundaries": "node scripts/check-boundaries.mjs",
     "typecheck": "pnpm -r --if-present typecheck",
     "test": "pnpm test:boundaries && pnpm -r --if-present test",
-    "test:boundaries": "node --test scripts/check-boundaries.test.mjs",
+    "test:boundaries": "node --test scripts/check-boundaries.test.mjs scripts/audit-dependencies.test.mjs",
     "test:integration": "pnpm -r --if-present test:integration",
     "test:load": "k6 run load/technical-foundation.js",
     "test:load:local": "node scripts/run-load-harness.mjs",

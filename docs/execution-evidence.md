@@ -49,9 +49,23 @@ Com a reexecução completa acima e as transferências aprovadas, o gate de exec
 - Proteção de branch requer configuração do proprietário; um status falho hoje não impede tecnicamente um push direto a `main`.
 - Builds de contêiner e smoke de aplicações não equivalem a deploy, backups ou alta disponibilidade. Provedor, HTTPS, restore, RPO/RTO e staging continuam fora desta execução.
 - Harness não implementa filiações, pontuação, XP, moderação, loja ou chat. Está bloqueado em produção por configuração.
-- A revisão de vulnerabilidades de dependências não foi executada nesta auditoria. Ausência de falha funcional não é atestado de ausência de vulnerabilidades.
+- A revisão inicial não executou auditoria de dependências. O Verify identificou a lacuna e ela foi corrigida com `pnpm audit:dependencies` obrigatório no workflow; triagem aberta em [dependency-audit.md](dependency-audit.md). Ausência de falha funcional não é atestado de ausência de vulnerabilidades.
 - Specs, decisões e matriz detalhada permanecem locais e fora do histórico público.
 
 ## Histórico
+
+### Correções após Verify independente
+
+O Verify inicial reprovou a autorização de sockets existentes após logout. Dois testes novos
+reproduziram o problema antes da correção: nova entrada em sala após revogação e após expiração
+persistida. A API agora resolve a mesma sessão de REST em cada `match:join`; sessão inválida ou
+substituída é rejeitada antes de acesso a estado/sala e encerra a namespace. Erro de consulta
+também falha fechado. Testes unitários cobrem falha de consulta e identidade substituída; as
+regressões reais passaram após a alteração. A revisão independente deve confirmar a correção,
+não confiar apenas neste relato do executor.
+
+A auditoria faltante agora distingue advisories (reportados para triagem) de erro de consulta
+(gate falha). Quatro advisories iniciais continuam abertos para atualização/análise, sem
+dispensa de produção. A matriz de navegadores reais ainda não foi completada nem dispensada.
 
 Os commits anteriores permanecem preservados. A etapa de pipeline precisou de dois commits: a execução Linux revelou expansão de globs diferente do PowerShell, corrigida em `a661d72` após `33ab811`. A auditoria inicial foi registrada em `cc744fc`; correções de testes/dependências em `b937242`. O registro final de evidência é separado da correção para poder citar a revisão efetivamente validada. Não foram alterados schema, regras do jogo, infraestrutura ou proteção de branch.
