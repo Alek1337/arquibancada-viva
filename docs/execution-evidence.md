@@ -1,6 +1,6 @@
 # Evidências de execução da fundação técnica
 
-Data da auditoria: 29 de setembro de 2026. Revisão de código: `a661d72547809fa4e3ae21aeffa86fa1f0a7371a`.
+Data da auditoria: 29 de setembro de 2026. Revisão inicial: `a661d72547809fa4e3ae21aeffa86fa1f0a7371a`. Revisão corrigida e validada: `b9372427ae9e16e4d429c7f1fd44d2b58f91ec3b`.
 
 Este registro não declara a fundação concluída nem substitui a verificação independente. Um pipeline verde comprova os checks existentes, não requisitos sem implementação ou teste.
 
@@ -10,6 +10,7 @@ O workflow [Technical foundation](https://github.com/Alek1337/arquibancada-viva/
 
 - [Execução anterior completa, com carga](https://github.com/Alek1337/arquibancada-viva/actions/runs/36638504789): sucesso na revisão acima; 73 testes unitários, quatro checks de fronteiras, 22 testes integrados, dez cenários de shell em cinco projetos de navegador e uma jornada autenticada com reinício do Redis. Inclui smoke de produção e builds dos três contêineres.
 - [Reexecução da auditoria, com carga](https://github.com/Alek1337/arquibancada-viva/actions/runs/36639654945): **sucesso**, job em 4min02s, na mesma revisão. Todos os gates existentes passaram, incluindo dez cenários de shell, jornada com restart Redis e três imagens. Carga: 20 sessões, 155 requisições HTTP totais; p95 de ação 7,75 ms e de evento 105,4 ms; zero falhas de comandos e zero confirmações sem evento.
+- [Validação completa após correções](https://github.com/Alek1337/arquibancada-viva/actions/runs/36641144655): **sucesso**, job em 4min28s, revisão `b937242`. Instalação imutável, lint, tipos, 73 testes unitários, quatro de fronteiras, 23 integrados, migrations, builds, smoke de produção, dez cenários de shell, jornada com restart Redis e três imagens passaram. Carga: 20 sessões, 155 requisições HTTP totais; p95 ação **8,51 ms**, evento **100 ms**; zero falhas de comandos e zero confirmações sem evento.
 
 A carga anterior usou 20 sessões, cooldown técnico de três segundos e 155 requisições HTTP totais, incluindo preparação e consultas (não 155 ações competitivas). p95 HTTP de ação: 7,26 ms; p95 evento: 94 ms; sem falhas de comandos ou confirmações sem evento. São medidas do harness em loopback, não do jogo completo ou do ambiente beta. O atraso do evento é medido a partir do timestamp técnico persistido, não por instrumentação direta do instante do commit.
 
@@ -29,15 +30,17 @@ A carga anterior usou 20 sessões, cooldown técnico de três segundos e 155 req
 | Health, readiness, shutdown e contêineres | production smoke e workflow |
 | PWA, offline e componentes-base acessíveis | web shell E2E, connection-state e UI tests |
 
-## Pendências para fechamento
+## Resolução da auditoria
 
-1. `packages/game-core` é um scaffold vazio: isolamento está coberto, determinismo com tempo/RNG explícitos e invariantes do núcleo não estão demonstrados.
-2. Não há snapshot imutável de regras de partida. A versão do contrato de evento não comprova imutabilidade de configuração competitiva.
-3. O teste chamado “supported previous state” preserva uma tabela auxiliar, mas não instala a penúltima versão das migrations antes de atualizar. Deve ser substituído ou complementado por upgrade real com dados preservados.
-4. Os testes HTTP usam `fetch`/injeção Fastify. Supertest, previsto no plano técnico, ainda não integra a suíte. É preciso implementá-lo ou aprovar formalmente a alternativa.
-5. Metas de capacidade e latência foram demonstradas apenas para o harness. O motor real e o ambiente-alvo do beta ainda precisam de validação; não há aprovação registrada dispensando essa evidência final.
+O proprietário aprovou em 29/09/2026 corrigir as evidências de migration e HTTP na fundação e transferir as obrigações competitivas para as etapas apropriadas. Isso não dispensa os requisitos antes do lançamento.
 
-Não existe desvio aprovado nesta auditoria para encerrar essas pendências. O fechamento deve continuar bloqueado até correção ou decisão explícita de escopo; não foram alteradas regras do produto para satisfazer testes artificiais.
+- Correção `b937242`: o teste de upgrade aplica as quatro primeiras migrations reais, insere sequence/outbox e verifica a ausência da coluna nova. Depois aplica a quinta, preserva registros e hashes anteriores, confirma a coluna nova utilizável e testa reaplicação sem duplicação. O caso em banco vazio continua obrigatório.
+- Supertest 7.3.0 e tipos 7.2.1 são dependências exclusivas de desenvolvimento da API, fixadas no lockfile. A integração testa erros 401/400/409 pelo contrato Problem Details, ausência de efeito de comandos inválidos, dez retries concorrentes com um único evento/sequence e recuperação após restart. Cada caso usa banco temporário próprio; sockets são encerrados mesmo após falha de assertion.
+- Localmente passaram instalação imutável offline, `pnpm check`, `pnpm db:check` e `pnpm test:integration`: 73 testes unitários, quatro de fronteiras e 23 integrados. O primeiro build foi bloqueado pelo sandbox Windows; repetição autorizada fora dele passou. Uma falha inicial detectou compartilhamento de outbox entre testes; corrigida com isolamento por caso, sem enfraquecer assertions.
+- `game-core` continua scaffold: determinismo, invariantes e snapshot imutável de regras ficam obrigatórios na futura etapa de motor de partidas. Não confundir versão de evento com configuração competitiva.
+- Carga do motor real e metas no ambiente-alvo do beta ficam obrigatórias nas etapas de motor/implantação. As metas de 20 jogadores, p95 500 ms/1 segundo permanecem; harness em loopback não comprova o beta.
+
+Com a reexecução completa acima e as transferências aprovadas, o gate de execução está **pronto para Verify**. A feature só poderá ser considerada concluída após verificação independente; nenhum requisito transferido está declarado cumprido.
 
 ## Limitações e dívida operacional
 
@@ -51,4 +54,4 @@ Não existe desvio aprovado nesta auditoria para encerrar essas pendências. O f
 
 ## Histórico
 
-Os commits anteriores permanecem preservados. A etapa de pipeline precisou de dois commits: a execução Linux revelou expansão de globs diferente do PowerShell, corrigida em `a661d72` após `33ab811`. Este registro é documental e não altera runtime, schema, infraestrutura ou proteção de branch.
+Os commits anteriores permanecem preservados. A etapa de pipeline precisou de dois commits: a execução Linux revelou expansão de globs diferente do PowerShell, corrigida em `a661d72` após `33ab811`. A auditoria inicial foi registrada em `cc744fc`; correções de testes/dependências em `b937242`. O registro final de evidência é separado da correção para poder citar a revisão efetivamente validada. Não foram alterados schema, regras do jogo, infraestrutura ou proteção de branch.
