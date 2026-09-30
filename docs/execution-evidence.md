@@ -2,6 +2,8 @@
 
 Data da auditoria: 29 de setembro de 2026. Revisão inicial: `a661d72547809fa4e3ae21aeffa86fa1f0a7371a`. Revisão corrigida e validada: `b9372427ae9e16e4d429c7f1fd44d2b58f91ec3b`.
 
+Revisão após correções do Verify: `01a006b0ff590cdf17f5fe5a14d8a65a569c4c9c`. Parecer independente atual: **CONDITIONAL** pela matriz de navegadores reais pendente. Falhas de sessão e acknowledgement foram corrigidas/reverificadas; auditoria incluída, advisories continuam abertos.
+
 Este registro não declara a fundação concluída nem substitui a verificação independente. Um pipeline verde comprova os checks existentes, não requisitos sem implementação ou teste.
 
 ## Execuções reproduzíveis
@@ -11,6 +13,7 @@ O workflow [Technical foundation](https://github.com/Alek1337/arquibancada-viva/
 - [Execução anterior completa, com carga](https://github.com/Alek1337/arquibancada-viva/actions/runs/36638504789): sucesso na revisão acima; 73 testes unitários, quatro checks de fronteiras, 22 testes integrados, dez cenários de shell em cinco projetos de navegador e uma jornada autenticada com reinício do Redis. Inclui smoke de produção e builds dos três contêineres.
 - [Reexecução da auditoria, com carga](https://github.com/Alek1337/arquibancada-viva/actions/runs/36639654945): **sucesso**, job em 4min02s, na mesma revisão. Todos os gates existentes passaram, incluindo dez cenários de shell, jornada com restart Redis e três imagens. Carga: 20 sessões, 155 requisições HTTP totais; p95 de ação 7,75 ms e de evento 105,4 ms; zero falhas de comandos e zero confirmações sem evento.
 - [Validação completa após correções](https://github.com/Alek1337/arquibancada-viva/actions/runs/36641144655): **sucesso**, job em 4min28s, revisão `b937242`. Instalação imutável, lint, tipos, 73 testes unitários, quatro de fronteiras, 23 integrados, migrations, builds, smoke de produção, dez cenários de shell, jornada com restart Redis e três imagens passaram. Carga: 20 sessões, 155 requisições HTTP totais; p95 ação **8,51 ms**, evento **100 ms**; zero falhas de comandos e zero confirmações sem evento.
+- [Validação final após Verify](https://github.com/Alek1337/arquibancada-viva/actions/runs/36648719864): **sucesso**, job em 5min27s, revisão `01a006b`. Gates completos com auditoria, 81 unitários, sete checks Node (fronteiras/audit), 26 integrados, migrations, builds, smoke, dez cenários de navegador, restart Redis e três imagens. Carga: 20 sessões, 155 HTTP totais, p95 ação **8,35 ms**/evento **104 ms**, zero falhas ou confirmações sem evento. Não é validação do motor competitivo ou ambiente beta.
 
 A carga anterior usou 20 sessões, cooldown técnico de três segundos e 155 requisições HTTP totais, incluindo preparação e consultas (não 155 ações competitivas). p95 HTTP de ação: 7,26 ms; p95 evento: 94 ms; sem falhas de comandos ou confirmações sem evento. São medidas do harness em loopback, não do jogo completo ou do ambiente beta. O atraso do evento é medido a partir do timestamp técnico persistido, não por instrumentação direta do instante do commit.
 
@@ -67,5 +70,13 @@ não confiar apenas neste relato do executor.
 A auditoria faltante agora distingue advisories (reportados para triagem) de erro de consulta
 (gate falha). Quatro advisories iniciais continuam abertos para atualização/análise, sem
 dispensa de produção. A matriz de navegadores reais ainda não foi completada nem dispensada.
+
+Uma segunda reprodução independente detectou acknowledgement malformado que produzia
+rejeição não tratada. Correção `01a006b`: validação do argumento como função, rejeição
+estruturada para valores malformados e proteção final de Promise. Quatro casos unitários
+falharam antes do fix e passaram depois. Integração e diagnóstico independente sem observer
+global confirmaram rejeição de string/número/objeto/null, seguida de join válido e health 200.
+O revisor encerrou os achados de sessão, audit e acknowledgement. Parecer atual **CONDITIONAL**
+pela matriz de browsers reais pendente, não aprovação integral da feature nem do lançamento.
 
 Os commits anteriores permanecem preservados. A etapa de pipeline precisou de dois commits: a execução Linux revelou expansão de globs diferente do PowerShell, corrigida em `a661d72` após `33ab811`. A auditoria inicial foi registrada em `cc744fc`; correções de testes/dependências em `b937242`. O registro final de evidência é separado da correção para poder citar a revisão efetivamente validada. Não foram alterados schema, regras do jogo, infraestrutura ou proteção de branch.

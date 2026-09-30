@@ -21,8 +21,13 @@ com a sessão inválida falha no handshake. Não há downgrade de autorização 
 
 ## Protocolo da partida
 
-O cliente envia `match:join` com `matchId` e, em uma reconexão, `lastSequence`. A API entra na
-sala `match:{matchId}` e responde de uma destas formas:
+O cliente envia `match:join` com `matchId` e, em uma reconexão, `lastSequence`.
+O acknowledgement opcional é validado como função em runtime. String, número, objeto ou `null`
+no lugar dele rejeitam o envelope com `system:error.v1` / `INVALID_PAYLOAD`, sem consultar o
+estado ou entrar na sala. O handler consome também rejeições inesperadas e encerra a namespace;
+nenhuma Promise rejeitada é deixada escapar para o EventEmitter do Socket.IO.
+
+A API entra na sala `match:{matchId}` e responde de uma destas formas:
 
 - `current`: cliente e estado persistido já têm a mesma sequência;
 - `replay`: até 100 eventos contíguos são lidos do outbox PostgreSQL e emitidos como
