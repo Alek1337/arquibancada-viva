@@ -13,7 +13,7 @@ export function createEventEnvelopeSchema<
       version: z.literal(EVENT_ENVELOPE_VERSION),
       eventId: uuidV7Schema,
       matchId: uuidV7Schema,
-      sequence: z.number().int().positive(),
+      sequence: z.number().int().positive().max(Number.MAX_SAFE_INTEGER),
       occurredAt: isoUtcDateTimeSchema,
       eventType: z.literal(eventType),
       payload: payloadSchema,
