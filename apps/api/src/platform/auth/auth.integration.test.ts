@@ -490,4 +490,38 @@ describe("shared auth foundation over Fastify and Socket.IO", () => {
     gapSocket.close();
     await redis.quit();
   });
+
+  it("rejects a malformed socket acknowledgement without crashing or corrupting subsequent joins", async () => {
+    const signUp = await fetch(`${baseURL}/v1/auth/sign-up/email`, {
+      body: JSON.stringify({
+        email: `malformed-${testRun}@example.test`,
+        name: "Malformed socket fixture",
+        password: "Strong-password-42",
+      }),
+      headers: { "content-type": "application/json", origin: trustedOrigin },
+      method: "POST",
+    });
+    expect(signUp.status).toBe(200);
+    const cookie = cookieHeader(signUp).header;
+    const socket = await connectMatchSocket(baseURL, cookie);
+    try {
+      for (const argument of ["not-a-callback", 42, {}, null]) {
+        const error = onceEvent<{ code: string }>(socket, "system:error.v1");
+        socket.emit("match:join", { matchId: "not-a-uuid" }, argument);
+        expect(await error).toEqual({ code: "INVALID_PAYLOAD" });
+      }
+      expect(await joinMatch(socket, { matchId: "not-a-uuid" })).toEqual({
+        code: "INVALID_PAYLOAD",
+        ok: false,
+      });
+      const matchId = createPublicId();
+      await withTransaction(migrationRuntime.database, (transaction) =>
+        nextMatchSequence(transaction, matchId),
+      );
+      expect(await joinMatch(socket, { matchId })).toMatchObject({ ok: true, latestSequence: 1 });
+      expect((await fetch(`${baseURL}/v1/health`)).status).toBe(200);
+    } finally {
+      socket.close();
+    }
+  });
 });

@@ -35,6 +35,18 @@ function connectedSocket(resolveIdentity: AuthRuntime["resolveIdentity"]) {
 }
 
 describe("realtime command session guard", () => {
+  it.each(["not-a-callback", 42, {}, null])(
+    "rejects malformed acknowledgement arguments (%j)",
+    async (argument) => {
+      vi.clearAllMocks();
+      const { join, socket } = connectedSocket(async () => identity);
+      await expect(join({ matchId: "not-a-uuid" }, argument)).resolves.toBeUndefined();
+      expect(socket.emit).toHaveBeenCalledWith("system:error.v1", { code: "INVALID_PAYLOAD" });
+      expect(socket.join).not.toHaveBeenCalled();
+      expect(persistence.getRealtimeMatchState).not.toHaveBeenCalled();
+    },
+  );
+
   it.each([
     null,
     { sessionId: identity.sessionId, userId: "other-user" },

@@ -29,6 +29,13 @@ Os limites e a janela podem ser ajustados pelas variáveis `RATE_LIMIT_AUTH_MAX`
 
 O fail open de leituras mantém consultas disponíveis durante uma falha transitória do Redis. Operações que alteram estado falham fechadas para evitar abuso não contabilizado. PostgreSQL e a outbox continuam sendo a autoridade durável; o Redis não se torna fonte de verdade.
 
+## Auditoria de dependências
+
+`pnpm audit:dependencies` é executado no workflow e pode ser reproduzido localmente.
+Advisories são reportados para análise conforme a política inicial do projeto; falha de consulta
+ou relatório inválido falha o gate. Não há aceite automático de risco nem correção automática.
+Triagem, alertas abertos e controles atuais estão em [dependency-audit.md](dependency-audit.md).
+
 ## Logs e segredos
 
 API, autenticação e bootstrap registram somente campos estruturados aprovados. A sanitização recursiva remove cookies, tokens, senhas, e-mails, credenciais S3, assinaturas e URLs assinadas. Objetos `Error` não registram mensagem nem stack. Paths de autenticação perdem query string e fragmento antes do log.

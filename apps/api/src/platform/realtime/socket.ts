@@ -85,7 +85,15 @@ export function mountRealtimeSocket(
         ...(identity?.userId ? { userId: identity.userId } : {}),
       });
     });
-    socket.on("match:join", async (rawRequest: unknown, acknowledge?: JoinAcknowledgement) => {
+    async function handleJoin(rawRequest: unknown, rawAcknowledgement?: unknown) {
+      const acknowledge =
+        typeof rawAcknowledgement === "function"
+          ? (rawAcknowledgement as JoinAcknowledgement)
+          : undefined;
+      if (rawAcknowledgement !== undefined && !acknowledge) {
+        socket.emit("system:error.v1", { code: "INVALID_PAYLOAD" });
+        return;
+      }
       // A successful handshake is not permanent permission for subsequent commands.
       // Use the same persisted session resolver as REST, not cached socket identity.
       try {
@@ -208,7 +216,13 @@ export function mountRealtimeSocket(
       } finally {
         span.end();
       }
-    });
+    }
+    socket.on("match:join", (rawRequest: unknown, rawAcknowledgement?: unknown) =>
+      handleJoin(rawRequest, rawAcknowledgement).catch(() => {
+        // EventEmitter does not await handlers: consume every rejected promise.
+        socket.disconnect();
+      }),
+    );
   });
 
   return {

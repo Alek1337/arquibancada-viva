@@ -6,6 +6,7 @@ Use Node 24.14.1, pnpm 11.19.0 e Docker com Compose. Em checkout limpo:
 
 ```text
 pnpm install --frozen-lockfile
+pnpm audit:dependencies
 pnpm check
 pnpm db:check
 pnpm infra:config
