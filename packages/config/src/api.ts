@@ -12,6 +12,7 @@ import {
 } from "./shared";
 import { storageConfigShape } from "./storage";
 import { observabilityConfigShape } from "./observability";
+import { matchEngineConfigShape, validateMatchEngineConfig } from "./match-engine";
 
 const disabledByDefaultBooleanSchema = z
   .enum(["false", "true"])
@@ -35,11 +36,13 @@ export const apiConfigSchema = z
     RATE_LIMIT_MUTATION_MAX: z.coerce.number().int().min(1).max(10_000).default(30),
     RATE_LIMIT_WINDOW_MS: z.coerce.number().int().min(1_000).max(3_600_000).default(60_000),
     TECHNICAL_HARNESS_ENABLED: disabledByDefaultBooleanSchema,
+    ...matchEngineConfigShape,
     ...observabilityConfigShape,
     AUTH_SECRET: serverSecretSchema,
     ...storageConfigShape,
   })
   .superRefine((config, context) => {
+    validateMatchEngineConfig(config, context);
     if (config.NODE_ENV === "production" && config.TECHNICAL_HARNESS_ENABLED) {
       context.addIssue({
         code: "custom",

@@ -9,6 +9,7 @@ import {
 } from "./shared";
 import { storageConfigShape } from "./storage";
 import { observabilityConfigShape } from "./observability";
+import { matchEngineConfigShape, validateMatchEngineConfig } from "./match-engine";
 
 export const workerConfigSchema = z
   .object({
@@ -21,8 +22,10 @@ export const workerConfigSchema = z
     WORKER_PROBE_HOST: bindHostSchema.default("127.0.0.1"),
     WORKER_PROBE_PORT: z.coerce.number().int().min(1).max(65_535).default(3_002),
     ...observabilityConfigShape,
+    ...matchEngineConfigShape,
     ...storageConfigShape,
   })
+  .superRefine(validateMatchEngineConfig)
   .readonly();
 
 export type WorkerConfig = z.infer<typeof workerConfigSchema>;

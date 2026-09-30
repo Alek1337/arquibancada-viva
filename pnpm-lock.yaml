@@ -32,6 +32,9 @@ importers:
       '@arquibancada-viva/database':
         specifier: workspace:*
         version: link:../../packages/database
+      '@arquibancada-viva/game-core':
+        specifier: workspace:*
+        version: link:../../packages/game-core
       '@arquibancada-viva/observability':
         specifier: workspace:*
         version: link:../../packages/observability

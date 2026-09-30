@@ -16,7 +16,7 @@
     "lint": "biome lint .",
     "start": "node --env-file-if-exists=../../.env dist/main.js",
     "test": "vitest run --exclude \"**/*.integration.test.ts\"",
-    "test:integration": "vitest run src/platform/auth/auth.integration.test.ts src/platform/testing/technical-harness.integration.test.ts",
+    "test:integration": "vitest run src/platform/auth/auth.integration.test.ts src/platform/testing/technical-harness.integration.test.ts src/modules/matches/crypto/readiness.integration.test.ts",
     "typecheck": "tsc --project tsconfig.json --noEmit"
   },
   "dependencies": {
@@ -24,6 +24,7 @@
     "@arquibancada-viva/config": "workspace:*",
     "@arquibancada-viva/contracts": "workspace:*",
     "@arquibancada-viva/database": "workspace:*",
+    "@arquibancada-viva/game-core": "workspace:*",
     "@arquibancada-viva/observability": "workspace:*",
     "@arquibancada-viva/storage": "workspace:*",
     "@fastify/cors": "11.3.0",
