@@ -17,7 +17,7 @@
     "format": "biome format --write .",
     "lint": "biome lint .",
     "test": "vitest run --exclude \"**/*.integration.test.ts\"",
-    "test:integration": "vitest run src/database.integration.test.ts",
+    "test:integration": "vitest run src/database.integration.test.ts src/competitive-model.integration.test.ts",
     "typecheck": "tsc --project tsconfig.json --noEmit"
   },
   "dependencies": {

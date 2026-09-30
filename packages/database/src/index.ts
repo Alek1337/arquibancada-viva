@@ -1,4 +1,5 @@
-export { createPublicId } from "./identifiers.js";
+export { betterAuthDatabaseSchema } from "./better-auth.js";
+export * from "./competitive-model.js";
 export {
   deleteExpiredIdempotencyRecords,
   executeIdempotentCommand,
@@ -10,8 +11,19 @@ export {
   type JsonPrimitive,
   type JsonValue,
 } from "./idempotency.js";
-export { betterAuthDatabaseSchema } from "./better-auth.js";
+export { createPublicId } from "./identifiers.js";
 export { applyMigrations, MIGRATIONS_DIRECTORY } from "./migrations.js";
+export {
+  createOutboxDispatcher,
+  getOutboxMessage,
+  type OutboxDispatcher,
+  type OutboxDispatcherOptions,
+  type OutboxDispatchSummary,
+  type OutboxMessage,
+  type OutboxMessageInput,
+  type OutboxPublisher,
+  recordOutboxMessage,
+} from "./outbox.js";
 export {
   checkDatabaseConnection,
   createApiDatabase,
@@ -24,25 +36,6 @@ export {
   type DatabaseRuntime,
 } from "./pool.js";
 export {
-  appSchema,
-  idempotencyRecords,
-  matchSequences,
-  outboxMessages,
-  outboxStatus,
-} from "./schema/index.js";
-export {
-  createOutboxDispatcher,
-  getOutboxMessage,
-  type OutboxDispatcher,
-  type OutboxDispatcherOptions,
-  type OutboxDispatchSummary,
-  type OutboxMessage,
-  type OutboxMessageInput,
-  type OutboxPublisher,
-  recordOutboxMessage,
-} from "./outbox.js";
-export { authSchema } from "./schema/auth/better-auth.js";
-export {
   applyQueueFixtureEffect,
   countQueueFixtureEffects,
   type QueueFixtureEffectInput,
@@ -54,14 +47,23 @@ export {
   type PersistedRealtimeEvent,
   type RealtimeMatchState,
 } from "./realtime.js";
+export * from "./schema/app/competitive.js";
+export { authSchema } from "./schema/auth/better-auth.js";
+export {
+  appSchema,
+  idempotencyRecords,
+  matchSequences,
+  outboxMessages,
+  outboxStatus,
+} from "./schema/index.js";
+export {
+  type ExecuteTechnicalActionInput,
+  executeTechnicalAction,
+  type TechnicalActionCommandValue,
+} from "./technical-action.js";
 export {
   type DatabaseTransaction,
   nextMatchSequence,
   type TransactionOptions,
   withTransaction,
 } from "./transactions.js";
-export {
-  executeTechnicalAction,
-  type ExecuteTechnicalActionInput,
-  type TechnicalActionCommandValue,
-} from "./technical-action.js";

@@ -1,3 +1,4 @@
+export * from "./app/competitive.js";
 export { idempotencyRecords } from "./app/idempotency.js";
 export { matchSequences } from "./app/match-sequences.js";
 export { outboxMessages, outboxStatus } from "./app/outbox.js";

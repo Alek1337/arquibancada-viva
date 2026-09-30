@@ -1,9 +1,10 @@
-import { eq, sql } from "drizzle-orm";
-import { Pool } from "pg";
 import { cp, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { eq, sql } from "drizzle-orm";
+import { Pool } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { dropIsolatedTestDatabase } from "./database-test-utils.js";
 import { createPublicId } from "./identifiers.js";
 import { applyMigrations, MIGRATIONS_DIRECTORY } from "./migrations.js";
 import { createDatabaseRuntime, createMigrationDatabase, type DatabaseRuntime } from "./pool.js";
@@ -57,6 +58,7 @@ describe("PostgreSQL foundation", () => {
     max: 1,
   });
   let adminConnected = false;
+  const createdDatabases: string[] = [];
   let applicationRuntime: DatabaseRuntime;
   let emptyRuntime: DatabaseRuntime;
   let previousRuntime: DatabaseRuntime;
@@ -65,7 +67,9 @@ describe("PostgreSQL foundation", () => {
     await adminPool.query("SELECT 1");
     adminConnected = true;
     await adminPool.query(`CREATE DATABASE ${quoteDatabaseName(emptyDatabaseName)}`);
+    createdDatabases.push(emptyDatabaseName);
     await adminPool.query(`CREATE DATABASE ${quoteDatabaseName(previousDatabaseName)}`);
+    createdDatabases.push(previousDatabaseName);
 
     emptyRuntime = createMigrationDatabase(databaseUrl(emptyDatabaseName));
     applicationRuntime = createDatabaseRuntime("api", databaseUrl(emptyDatabaseName), 10);
@@ -80,13 +84,8 @@ describe("PostgreSQL foundation", () => {
     ]);
 
     if (adminConnected) {
-      for (const databaseName of [emptyDatabaseName, previousDatabaseName]) {
-        await adminPool.query(
-          "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = $1 AND pid <> pg_backend_pid()",
-          [databaseName],
-        );
-        await adminPool.query(`DROP DATABASE IF EXISTS ${quoteDatabaseName(databaseName)}`);
-      }
+      for (const databaseName of createdDatabases)
+        await dropIsolatedTestDatabase(adminPool, databaseName);
     }
 
     await adminPool.end();
@@ -106,7 +105,7 @@ describe("PostgreSQL foundation", () => {
     );
 
     expect(schemas.rows.map((row) => row.schema_name)).toEqual(["app", "auth", "drizzle"]);
-    expect(migrationCount.rows[0]?.count).toBe(5);
+    expect(migrationCount.rows[0]?.count).toBe(6);
 
     const authTables = await emptyRuntime.pool.query<{ table_name: string }>(`
       SELECT table_name
@@ -140,7 +139,7 @@ describe("PostgreSQL foundation", () => {
         )
     `);
 
-    expect(migrationCount.rows[0]?.count).toBe(5);
+    expect(migrationCount.rows[0]?.count).toBe(6);
     expect(tableCount.rows[0]?.count).toBe(4);
   });
 
@@ -171,7 +170,7 @@ describe("PostgreSQL foundation", () => {
       WHERE table_schema = 'app' AND table_name = 'outbox_messages'
         AND column_name = 'correlation_id'
     `);
-    expect(columnBefore.rows).toEqual([]);
+    expect(columnBefore.rows).toEqual([{ column_name: "correlation_id" }]);
 
     const matchId = createPublicId();
     const eventId = createPublicId();
@@ -186,6 +185,11 @@ describe("PostgreSQL foundation", () => {
        VALUES ($1, 'match', $2, 1, 'fixture.recorded', $3, $4)`,
       [eventId, matchId, JSON.stringify({ marker: "preserved" }), occurredAt],
     );
+    const preservedUserId = `upgrade-${createPublicId()}`;
+    await previousRuntime.pool.query(
+      `INSERT INTO auth."user" (id,name,email,email_verified) VALUES ($1,'Upgrade fixture',$2,true)`,
+      [preservedUserId, `${preservedUserId}@example.invalid`],
+    );
 
     await applyMigrations(previousRuntime.database);
     const after = await previousRuntime.pool.query<{ id: number; hash: string }>(
@@ -193,6 +197,13 @@ describe("PostgreSQL foundation", () => {
     );
     expect(after.rows).toHaveLength(journal.entries.length);
     expect(after.rows.slice(0, -1)).toEqual(before.rows);
+    expect(
+      (
+        await previousRuntime.pool.query(`SELECT id,email_verified FROM auth."user" WHERE id=$1`, [
+          preservedUserId,
+        ])
+      ).rows,
+    ).toEqual([{ id: preservedUserId, email_verified: true }]);
     const [event] = await previousRuntime.database
       .select()
       .from(outboxMessages)
